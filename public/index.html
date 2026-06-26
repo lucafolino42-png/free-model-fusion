@@ -97,7 +97,7 @@ a{color:var(--accent);text-decoration:none}
 .btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,.2)}
 .btn-danger:hover{background:rgba(248,113,113,.2)}
 .btn-sm{padding:5px 10px;font-size:12px}
-.btn-icon{padding:6px;min-width:32px;justify-content:center}
+.btn-icon{padding:10px;min-width:44px;min-height:44px;justify-content:center}
 .input{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text-primary);font-size:13px;font-family:var(--font-sans);outline:none;transition:border-color .2s;width:100%}
 .input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(129,140,248,.15)}
 .input::placeholder{color:var(--text-muted)}
@@ -139,6 +139,14 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--font-mono);font
 .typing-dot:nth-child(2){animation-delay:.2s}
 .typing-dot:nth-child(3){animation-delay:.4s}
 @keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+
+/* ── Reduced motion: disable non-essential animations ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+  .view{animation:none !important}
+  .chat-msg{animation:none !important}
+  .typing-dot{animation:none !important}
+}
 
 /* ── Tables ──────────────────────────────────────────── */
 .table-wrap{overflow-x:auto}
@@ -197,7 +205,7 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
 
 <div class="app" id="app">
   <!-- Sidebar Overlay (mobile) -->
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" role="button" tabindex="-1" aria-label="Close navigation menu"></div>
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
@@ -208,30 +216,30 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
         <div class="sidebar-subtitle">AI Router Dashboard</div>
       </div>
     </div>
-    <nav class="sidebar-nav">
-      <button class="nav-item active" data-view="chat" onclick="switchView('chat')">
-        <span class="icon">💬</span> Chat
+    <nav class="sidebar-nav" aria-label="Primary">
+      <button class="nav-item active" data-view="chat" onclick="switchView('chat')" aria-current="page">
+        <span class="icon" aria-hidden="true">💬</span> Chat
       </button>
       <button class="nav-item" data-view="dashboard" onclick="switchView('dashboard')">
-        <span class="icon">📊</span> Dashboard
+        <span class="icon" aria-hidden="true">📊</span> Dashboard
       </button>
       <button class="nav-item" data-view="providers" onclick="switchView('providers')">
-        <span class="icon">🏢</span> Providers
+        <span class="icon" aria-hidden="true">🏢</span> Providers
       </button>
       <button class="nav-item" data-view="models" onclick="switchView('models')">
-        <span class="icon">🤖</span> Models
+        <span class="icon" aria-hidden="true">🤖</span> Models
       </button>
       <button class="nav-item" data-view="keys" onclick="switchView('keys')">
-        <span class="icon">🔑</span> API Keys
+        <span class="icon" aria-hidden="true">🔑</span> API Keys
       </button>
       <button class="nav-item" data-view="settings" onclick="switchView('settings')">
-        <span class="icon">⚙️</span> Settings
+        <span class="icon" aria-hidden="true">⚙️</span> Settings
       </button>
       <button class="nav-item" data-view="env" onclick="switchView('env')">
-        <span class="icon">🌐</span> Environment
+        <span class="icon" aria-hidden="true">🌐</span> Environment
       </button>
       <button class="nav-item" data-view="memory" onclick="switchView('memory')">
-        <span class="icon">💾</span> Memory
+        <span class="icon" aria-hidden="true">💾</span> Memory
       </button>
     </nav>
   </aside>
@@ -239,8 +247,8 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
   <!-- Main Content -->
   <main class="main">
     <header class="header">
-      <button class="btn btn-icon btn-secondary" onclick="toggleSidebar()" style="display:none" id="menuBtn">
-        <span>☰</span>
+      <button class="btn btn-icon btn-secondary" onclick="toggleSidebar()" style="display:none" id="menuBtn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <span aria-hidden="true">☰</span>
       </button>
       <div class="header-title">
         <span id="viewTitle">💬 Chat</span>
@@ -553,13 +561,20 @@ function closeModal(id){document.getElementById(id).classList.remove('open')}
 function openModal(id){document.getElementById(id).classList.add('open')}
 
 function toggleSidebar(){
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('open');
+  const sidebar=document.getElementById('sidebar');
+  const open=sidebar.classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open',open);
+  const btn=document.getElementById('menuBtn');
+  if(btn)btn.setAttribute('aria-expanded',open?'true':'false');
 }
 
 // ── View Switching ────────────────────────────────────
 function switchView(view){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    const active=n.dataset.view===view;
+    n.classList.toggle('active',active);
+    if(active)n.setAttribute('aria-current','page');else n.removeAttribute('aria-current');
+  });
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const vw=document.getElementById('view-'+view);
   if(vw)vw.classList.add('active');
@@ -636,8 +651,8 @@ async function refreshProviders(){
         '<td>'+key+'</td>'+
         '<td><span class="tag '+(p.isPreset?'tag-yellow':'tag-green')+'">'+(p.isPreset?'built-in':'custom')+'</span></td>'+
         '<td style="white-space:nowrap">'+
-          (p.isPreset?'':'<button class="btn btn-sm '+toggleClass+'" onclick="toggleProvider(\''+esc(p.id)+'\',!'+p.enabled+')">'+toggleLabel+'</button> ')+
-          (p.isPreset?'':('<button class="btn btn-sm btn-danger" onclick="deleteProvider(\''+esc(p.id)+'\')">Delete</button>'))+
+          (p.isPreset?'':'<button class="btn btn-sm '+toggleClass+'" onclick="toggleProvider(\''+escapeAttr(p.id)+'\',!'+p.enabled+')">'+toggleLabel+'</button> ')+
+          (p.isPreset?'':('<button class="btn btn-sm btn-danger" onclick="deleteProvider(\''+escapeAttr(p.id)+'\')">Delete</button>'))+
         '</td>'+
         '</tr>'
     }).join('');
@@ -702,7 +717,7 @@ async function refreshModels(){
         '<td><span class="tag tag-blue">'+esc(m.speedClass)+'</span></td>'+
         '<td><span class="tag tag-accent">'+esc(m.qualityClass)+'</span></td>'+
         '<td>'+key+'</td>'+
-        '<td>'+(m.isPreset?'':('<button class="btn btn-sm btn-danger" onclick="deleteModel(\''+esc(m.id)+'\')">Delete</button>'))+'</td>'+
+        '<td>'+(m.isPreset?'':('<button class="btn btn-sm btn-danger" onclick="deleteModel(\''+escapeAttr(m.id)+'\')">Delete</button>'))+'</td>'+
         '</tr>'
     }).join('');
   }catch(e){$('modelsTable').innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--red)">Error loading models.</td></tr>'}
@@ -749,7 +764,7 @@ async function refreshKeys(){
         '<td><code class="mono">'+esc(k.providerId)+'</code></td>'+
         '<td><code class="key">'+esc(k.maskedKey)+'</code></td>'+
         '<td>'+sourceTag+'</td>'+
-        '<td>'+(k.source==='db'?'<button class="btn btn-sm btn-danger" onclick="deleteKey(\''+esc(k.providerId)+'\')">Delete</button>':'<span class="tag tag-yellow">read-only</span>')+'</td>'+
+        '<td>'+(k.source==='db'?'<button class="btn btn-sm btn-danger" onclick="deleteKey(\''+escapeAttr(k.providerId)+'\')">Delete</button>':'<span class="tag tag-yellow">read-only</span>')+'</td>'+
         '</tr>'
     }).join('');
   }catch(e){$('keysTable').innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--red)">Error loading keys.</td></tr>'}
@@ -967,10 +982,10 @@ function addChatMessage(role,content,meta){
   if(meta){
     const r=meta.routing||{};const m=meta.models||{};const mem=meta.memory||{};
     const parts=[];
-    if(r.profile)parts.push('Profile: '+r.profile);
-    if(r.expertsUsed!==undefined)parts.push('Experts: '+r.expertsUsed+(r.judgeUsed?', Judge: ✓':''));
-    if(m.experts&&m.experts.length)parts.push('Models: '+m.experts.join(', '));
-    if(mem.sessionId)parts.push('Session: '+mem.sessionId);
+    if(r.profile)parts.push('Profile: '+esc(r.profile));
+    if(r.expertsUsed!==undefined)parts.push('Experts: '+esc(String(r.expertsUsed))+(r.judgeUsed?', Judge: ✓':''));
+    if(m.experts&&m.experts.length)parts.push('Models: '+esc(m.experts.join(', ')));
+    if(mem.sessionId)parts.push('Session: '+esc(mem.sessionId));
     if(parts.length)metaHtml='<div class="msg-meta">'+parts.join(' · ')+'</div>';
   }
   div.innerHTML='<div class="msg-label">'+label+'</div><div class="msg-body">'+body+'</div>'+metaHtml;
@@ -987,7 +1002,12 @@ function clearChat(){
 }
 
 // ── Helpers ────────────────────────────────────────────
+// esc(): escapes <,>,& for safe insertion into HTML text content.
+// Does NOT escape quotes — use escapeAttr() for attribute/string-literal contexts.
 function esc(s){if(!s)return '';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+// escapeAttr(): escapes <,>,&,',\" for safe use inside HTML attributes and
+// inside JS string literals embedded in onclick="..." attributes.
+function escapeAttr(s){return esc(s).replace(/'/g,'&#39;').replace(/"/g,'&quot;')}
 function formatUptime(s){const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=Math.floor(s%60);if(h>0)return h+'h '+m+'m';if(m>0)return m+'m '+sec+'s';return sec+'s'}
 
 // ── Init ───────────────────────────────────────────────
