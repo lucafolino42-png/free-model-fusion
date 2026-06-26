@@ -7,48 +7,64 @@ import type { RegisteredProvider } from './types.js';
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 // ─── Chat Completion Response Extraction ─────────────────
+type UnknownRecord = Record<string, unknown>;
+
+function isObject(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
 function extractContent(response: unknown): string | null {
-  const data = response as Record<string, unknown>;
+  if (!isObject(response)) return null;
+  const data = response;
 
   // OpenAI format: choices[0].message.content
-  const choices = data.choices as Array<Record<string, unknown>> | undefined;
-  if (choices && choices.length > 0) {
+  const choices = data.choices;
+  if (Array.isArray(choices) && choices.length > 0) {
     const choice = choices[0];
-    if (choice.message && typeof choice.message === 'object') {
-      const content = (choice.message as Record<string, unknown>).content;
-      if (typeof content === 'string') return content;
+    if (isObject(choice)) {
+      if (isObject(choice.message)) {
+        const content = choice.message.content;
+        if (isString(content)) return content;
+      }
+      if (isString(choice.text)) return choice.text;
     }
-    if (typeof choice.text === 'string') return choice.text;
   }
 
   // Gemini format: candidates[0].content.parts[].text
-  const candidates = data.candidates as
-    | Array<Record<string, unknown>>
-    | undefined;
-  if (candidates && candidates.length > 0) {
-    const content = candidates[0].content as Record<string, unknown> | undefined;
-    if (content) {
-      const parts = content.parts as Array<Record<string, unknown>> | undefined;
-      if (parts && parts.length > 0) {
-        return parts.map((p) => p.text || '').join('');
+  const candidates = data.candidates;
+  if (Array.isArray(candidates) && candidates.length > 0) {
+    const candidate = candidates[0];
+    if (isObject(candidate) && isObject(candidate.content)) {
+      const parts = candidate.content.parts;
+      if (Array.isArray(parts) && parts.length > 0) {
+        return parts
+          .map((p) => (isObject(p) && isString(p.text) ? p.text : ''))
+          .join('');
       }
     }
   }
 
   // Alternative formats
-  if (typeof data.output_text === 'string') return data.output_text;
-  if (typeof data.text === 'string') return data.text;
-  if (typeof data.message === 'string') return data.message;
+  if (isString(data.output_text)) return data.output_text;
+  if (isString(data.text)) return data.text;
+  if (isString(data.message)) return data.message;
 
   return null;
 }
 
 // ─── Finish Reason Extraction ────────────────────────────
 function extractFinishReason(response: unknown): string | undefined {
-  const data = response as Record<string, unknown>;
-  const choices = data.choices as Array<Record<string, unknown>> | undefined;
-  if (choices && choices.length > 0) {
-    return choices[0].finish_reason as string | undefined;
+  if (!isObject(response)) return undefined;
+  const choices = response.choices;
+  if (Array.isArray(choices) && choices.length > 0) {
+    const choice = choices[0];
+    if (isObject(choice) && isString(choice.finish_reason)) {
+      return choice.finish_reason;
+    }
   }
   return undefined;
 }
@@ -131,12 +147,12 @@ export async function callModel(
       );
     }
 
-    const data = (await response.json()) as Record<string, unknown>;
+    const data: unknown = await response.json();
 
     const content = extractContent(data);
     if (content === null) {
       logger.warn(`Could not extract content from ${modelId} response`, {
-        responseKeys: Object.keys(data),
+        responseKeys: isObject(data) ? Object.keys(data) : [],
       });
       throw new ProviderError(
         `Could not parse response from ${provider.label} model ${modelId}`,
@@ -145,8 +161,7 @@ export async function callModel(
     }
 
     const finishReason = extractFinishReason(data);
-    const model =
-      (data.model as string | undefined) || modelId;
+    const model = (isObject(data) && isString(data.model) ? data.model : null) || modelId;
 
     return {
       content,

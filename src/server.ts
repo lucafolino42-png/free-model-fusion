@@ -4,7 +4,7 @@ import rateLimit from '@fastify/rate-limit';
 import { config } from './config.js';
 import { logger } from './utils/logger.js';
 import { initializeDatabase, closeDatabase } from './db/client.js';
-import { registerRoutes } from './api/routes.js';
+import { registerRoutes } from './api/routes/index.js';
 import { initTelegramBot } from './telegram/bot.js';
 
 // ─── Create Server ───────────────────────────────────────
