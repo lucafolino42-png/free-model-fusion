@@ -74,4 +74,26 @@ describe('HTTP routes (in-process inject)', () => {
     });
     expect(res.statusCode).toBe(404);
   });
+
+  it('sets security headers on responses', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health' });
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['x-frame-options']).toBe('DENY');
+    expect(res.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
+    const csp = res.headers['content-security-policy'] as string;
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+  });
+
+  it('reflects a CORS allow-origin for requests', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health' });
+    // CORS_ORIGIN defaults to '*' in the test setup env, so an allow-origin
+    // header should be present on a request bearing an Origin header.
+    const resWithOrigin = await app.inject({
+      method: 'GET',
+      url: '/health',
+      headers: { origin: 'http://localhost:5173' },
+    });
+    expect(resWithOrigin.headers['access-control-allow-origin']).toBeDefined();
+  });
 });

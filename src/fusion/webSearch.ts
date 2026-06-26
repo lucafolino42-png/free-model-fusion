@@ -79,31 +79,33 @@ export async function searchWeb(
       );
     }
 
-    const data = (await response.json()) as {
-      query: string;
-      answer?: string;
-      results: Array<{
-        title: string;
-        url: string;
-        content: string;
-        score?: number;
-      }>;
-      response_time?: number;
-    };
+    const data: unknown = await response.json();
+
+    if (typeof data !== 'object' || data === null) {
+      throw new WebSearchError('Tavily returned an unexpected response shape');
+    }
+    const root = data as Record<string, unknown>;
+    const rawResults = Array.isArray(root.results) ? root.results : [];
+    const results: WebSearchResult[] = [];
+    for (const r of rawResults) {
+      if (typeof r !== 'object' || r === null) continue;
+      const row = r as Record<string, unknown>;
+      if (typeof row.title === 'string' && typeof row.url === 'string' && typeof row.content === 'string') {
+        results.push({
+          title: row.title,
+          url: row.url,
+          content: row.content,
+          score: typeof row.score === 'number' ? row.score : undefined,
+        });
+      }
+    }
+    const answer = typeof root.answer === 'string' ? root.answer : undefined;
 
     logger.debug(
-      `Web search returned ${data.results?.length || 0} results in ${data.response_time || '?'}ms`
+      `Web search returned ${results.length} results in ${typeof root.response_time === 'number' ? root.response_time : '?'}ms`
     );
 
-    return {
-      results: (data.results || []).map((r) => ({
-        title: r.title,
-        url: r.url,
-        content: r.content,
-        score: r.score,
-      })),
-      answer: data.answer,
-    };
+    return { results, answer };
   } catch (error) {
     if (error instanceof WebSearchError) throw error;
     throw new WebSearchError(`Web search failed: ${String(error)}`);
