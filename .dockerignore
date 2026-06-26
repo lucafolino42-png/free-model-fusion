@@ -1,0 +1,13 @@
+node_modules
+dist
+data
+.env
+.git
+.gitignore
+*.db
+*.db-journal
+drizzle
+coverage
+tests
+.tmp
+*.log

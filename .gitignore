@@ -1,0 +1,12 @@
+node_modules/
+dist/
+data/
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
+drizzle/
+coverage/
+.tmp/
+*.log

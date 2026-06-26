@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free Model Fusion</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Variables ───────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#08080e;
+  --bg-secondary:#0d0d1a;
+  --bg-card:rgba(255,255,255,.035);
+  --bg-card-hover:rgba(255,255,255,.06);
+  --bg-input:rgba(255,255,255,.06);
+  --bg-sidebar:#0a0a15;
+  --border:rgba(255,255,255,.08);
+  --border-focus:rgba(129,140,248,.5);
+  --text-primary:#e8e8f0;
+  --text-secondary:#8888a0;
+  --text-muted:#555570;
+  --accent:#818cf8;
+  --accent-hover:#6366f1;
+  --accent2:#22d3ee;
+  --accent3:#a78bfa;
+  --green:#4ade80;
+  --green-bg:rgba(74,222,128,.1);
+  --red:#f87171;
+  --red-bg:rgba(248,113,113,.1);
+  --yellow:#fbbf24;
+  --yellow-bg:rgba(251,191,36,.1);
+  --blue:#60a5fa;
+  --sidebar-width:220px;
+  --header-height:52px;
+  --font-sans:'Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --radius:10px;
+  --radius-sm:6px;
+  --radius-lg:14px;
+  --shadow:0 2px 20px rgba(0,0,0,.4);
+}
+html,body{height:100%;font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
+
+/* ── Layout ─────────────────────────────────────────── */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:var(--sidebar-width);background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;z-index:10}
+.sidebar-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-logo{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.sidebar-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+.sidebar-subtitle{font-size:10px;color:var(--text-muted);margin-top:-1px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+.nav-item.active{background:rgba(129,140,248,.12);color:var(--accent)}
+.nav-item .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-item .badge{margin-left:auto;font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--text-muted)}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.header{height:var(--header-height);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;background:var(--bg-secondary);flex-shrink:0}
+.header-title{font-size:15px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+.header-status{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:12px;color:var(--text-secondary)}
+.header-status .dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);transition:background .3s}
+.header-status .dot.online{background:var(--green);box-shadow:0 0 6px rgba(74,222,128,.4)}
+.header-status .dot.offline{background:var(--red);box-shadow:0 0 6px rgba(248,113,113,.4)}
+.content{flex:1;overflow-y:auto;padding:20px;position:relative}
+
+/* ── View toggle (hidden by default, show active) ──── */
+.view{display:none;animation:fadeIn .2s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Cards ──────────────────────────────────────────── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;transition:border-color .2s}
+.card:hover{border-color:rgba(255,255,255,.12)}
+.card-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-subtitle{font-size:12px;color:var(--text-secondary);margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:all .15s}
+.stat:hover{border-color:rgba(255,255,255,.15);transform:translateY(-1px)}
+.stat-value{font-size:22px;font-weight:700;color:var(--text-primary);font-family:var(--font-mono)}
+.stat-label{font-size:11px;color:var(--text-secondary);margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
+.stat-icon{font-size:20px;margin-bottom:8px}
+
+/* ── Buttons & Inputs ───────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:none;font-family:var(--font-sans)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-secondary{background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--bg-card-hover)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(248,113,113,.2)}
+.btn-danger:hover{background:rgba(248,113,113,.2)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:6px;min-width:32px;justify-content:center}
+.input{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text-primary);font-size:13px;font-family:var(--font-sans);outline:none;transition:border-color .2s;width:100%}
+.input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(129,140,248,.15)}
+.input::placeholder{color:var(--text-muted)}
+select.input{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238888a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+textarea.input{resize:vertical;min-height:80px;font-family:var(--font-mono);font-size:12px}
+
+/* ── Form rows ──────────────────────────────────────── */
+.form-row{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.form-group{flex:1;min-width:0}
+.form-group label{display:block;font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.form-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* ── Toast ───────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:1000;background:rgba(13,13,26,.95);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;font-size:13px;color:var(--text-primary);box-shadow:var(--shadow);backdrop-filter:blur(12px);display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:400px}
+.toast.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.toast.success{border-color:rgba(74,222,128,.3)}.toast.error{border-color:rgba(248,113,113,.3)}
+.toast-icon{font-size:16px;flex-shrink:0}
+
+/* ── Chat ────────────────────────────────────────────── */
+.chat-container{display:flex;flex-direction:column;height:100%;padding:0}
+.chat-toolbar{display:flex;gap:8px;padding:0 0 12px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border);margin-bottom:12px}
+.chat-toolbar .input{width:auto;min-width:140px}
+.chat-messages{flex:1;overflow-y:auto;padding:4px 0;display:flex;flex-direction:column;gap:10px;min-height:0}
+.chat-msg{max-width:85%;padding:12px 16px;border-radius:var(--radius);animation:msgIn .2s ease;font-size:13px;line-height:1.6;position:relative}
+.chat-msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.assistant{align-self:flex-start;background:var(--bg-card);border:1px solid var(--border);border-bottom-left-radius:4px;color:var(--text-primary)}
+.chat-msg .msg-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;opacity:.6}
+.chat-msg .msg-body{white-space:pre-wrap;word-break:break-word}
+.chat-msg .msg-body code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:12px}
+.chat-msg .msg-body pre{background:rgba(0,0,0,.3);padding:10px;border-radius:6px;overflow-x:auto;margin:6px 0;font-size:12px}
+.chat-msg .msg-meta{font-size:10px;color:var(--text-muted);margin-top:6px}
+.chat-msg.assistant .msg-meta{color:var(--text-muted)}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.chat-input-area{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border)}
+.chat-input-area .input{flex:1}
+.chat-input-area .btn{padding:9px 20px}
+.typing-indicator{display:flex;align-items:center;gap:4px;padding:12px 16px;align-self:flex-start;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);border-bottom-left-radius:4px}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:typingBounce 1.4s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+
+/* ── Tables ──────────────────────────────────────────── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--text-primary);vertical-align:middle}
+tr:hover td{background:var(--bg-card-hover)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500}
+.tag-green{background:var(--green-bg);color:var(--green)}
+.tag-red{background:var(--red-bg);color:var(--red)}
+.tag-yellow{background:var(--yellow-bg);color:var(--yellow)}
+.tag-blue{background:rgba(96,165,250,.1);color:var(--blue)}
+.tag-accent{background:rgba(129,140,248,.12);color:var(--accent)}
+code.key{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary)}
+code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
+
+/* ── JSON viewer ─────────────────────────────────────── */
+.json-view{background:rgba(0,0,0,.2);border-radius:var(--radius-sm);padding:12px;font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);overflow-x:auto;white-space:pre-wrap;max-height:300px;overflow-y:auto}
+
+/* ── Modal ────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:520px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow)}
+.modal h3{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.modal .form-actions{margin-top:16px;justify-content:flex-end}
+
+/* ── Env editor ─────────────────────────────────────── */
+.env-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.env-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);transition:all .15s}
+.env-row:hover{border-color:rgba(255,255,255,.12)}
+.env-row .key{font-size:12px;font-weight:500;color:var(--accent3);min-width:180px;font-family:var(--font-mono)}
+.env-row .val{font-size:12px;color:var(--text-secondary);font-family:var(--font-mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.env-row .val.unset{color:var(--text-muted);font-style:italic}
+.env-row .actions{display:flex;gap:4px;flex-shrink:0}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .25s;z-index:20}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:19;display:none}
+  .sidebar-overlay.open{display:block}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .form-row{flex-direction:column}
+  .env-row{flex-wrap:wrap}
+  .env-row .key{min-width:120px}
+  .header-title{font-size:13px}
+  .content{padding:14px}
+  .chat-msg{max-width:92%}
+}
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">F</div>
+      <div>
+        <div class="sidebar-title">Free Model Fusion</div>
+        <div class="sidebar-subtitle">AI Router Dashboard</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="chat" onclick="switchView('chat')">
+        <span class="icon">💬</span> Chat
+      </button>
+      <button class="nav-item" data-view="dashboard" onclick="switchView('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" data-view="providers" onclick="switchView('providers')">
+        <span class="icon">🏢</span> Providers
+      </button>
+      <button class="nav-item" data-view="models" onclick="switchView('models')">
+        <span class="icon">🤖</span> Models
+      </button>
+      <button class="nav-item" data-view="keys" onclick="switchView('keys')">
+        <span class="icon">🔑</span> API Keys
+      </button>
+      <button class="nav-item" data-view="settings" onclick="switchView('settings')">
+        <span class="icon">⚙️</span> Settings
+      </button>
+      <button class="nav-item" data-view="env" onclick="switchView('env')">
+        <span class="icon">🌐</span> Environment
+      </button>
+      <button class="nav-item" data-view="memory" onclick="switchView('memory')">
+        <span class="icon">💾</span> Memory
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <header class="header">
+      <button class="btn btn-icon btn-secondary" onclick="toggleSidebar()" style="display:none" id="menuBtn">
+        <span>☰</span>
+      </button>
+      <div class="header-title">
+        <span id="viewTitle">💬 Chat</span>
+      </div>
+      <div class="header-status">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+    </header>
+
+    <div class="content" id="content">
+      <!-- ===== CHAT VIEW ===== -->
+      <div class="view active" id="view-chat">
+        <div class="chat-container">
+          <div class="chat-toolbar">
+            <input class="input" id="chatSessionId" placeholder="Session ID" value="default" style="max-width:140px">
+            <select class="input" id="chatProfile" style="max-width:120px">
+              <option value="balanced">Balanced</option>
+              <option value="speed">Speed</option>
+              <option value="quality">Quality</option>
+              <option value="custom">Custom</option>
+            </select>
+            <select class="input" id="chatWeb" style="max-width:100px">
+              <option value="off">Web: Off</option>
+              <option value="auto">Web: Auto</option>
+              <option value="on">Web: On</option>
+            </select>
+            <button class="btn btn-sm btn-secondary" onclick="clearChat()">Clear</button>
+          </div>
+          <div class="chat-messages" id="chatMessages">
+            <div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px">
+              Send a message to start chatting with Free Model Fusion.
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <input class="input" id="chatInput" placeholder="Type a message or command (/help, /providers, /models...)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}">
+            <button class="btn btn-primary" onclick="sendChat()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== DASHBOARD VIEW ===== -->
+      <div class="view" id="view-dashboard">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:16px">📊 Dashboard</h2>
+        <div class="stats" id="dashStats">
+          <div class="stat"><div class="stat-icon">🟢</div><div class="stat-value" id="dashHealth">-</div><div class="stat-label">Health</div></div>
+          <div class="stat"><div class="stat-icon">🏢</div><div class="stat-value" id="dashProviders">-</div><div class="stat-label">Providers</div></div>
+          <div class="stat"><div class="stat-icon">🤖</div><div class="stat-value" id="dashModels">-</div><div class="stat-label">Models</div></div>
+          <div class="stat"><div class="stat-icon">🔑</div><div class="stat-value" id="dashKeys">-</div><div class="stat-label">API Keys</div></div>
+          <div class="stat"><div class="stat-icon">⏱️</div><div class="stat-value" id="dashUptime">-</div><div class="stat-label">Uptime</div></div>
+          <div class="stat"><div class="stat-icon">⚙️</div><div class="stat-value" id="dashProfile">-</div><div class="stat-label">Profile</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Server Info</div>
+          <div id="serverInfo" style="font-size:13px;line-height:1.8;color:var(--text-secondary)">Loading...</div>
+        </div>
+      </div>
+
+      <!-- ===== PROVIDERS VIEW ===== -->
+      <div class="view" id="view-providers">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <h2 style="font-size:20px;font-weight:600">🏢 Providers</h2>
+          <button class="btn btn-primary btn-sm" onclick="openAddProviderModal()">+ Add Provider</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table><thead><tr>
+            <th>Status</th><th>Provider</th><th>Endpoint</th><th>Speed</th><th>Quality</th><th>Key</th><th>Type</th><th>Actions</th>
+          </tr></thead><tbody id="providersTable"><tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ===== MODELS VIEW ===== -->
+      <div class="view" id="view-models">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <h2 style="font-size:20px;font-weight:600">🤖 Models</h2>
+          <button class="btn btn-primary btn-sm" onclick="openAddModelModal()">+ Add Model</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table><thead><tr>
+            <th>Status</th><th>Key</th><th>Title</th><th>Provider</th><th>Model ID</th><th>Use As</th><th>Speed</th><th>Quality</th><th>Key</th><th>Actions</th>
+          </tr></thead><tbody id="modelsTable"><tr><td colspan="10" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ===== API KEYS VIEW ===== -->
+      <div class="view" id="view-keys">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <h2 style="font-size:20px;font-weight:600">🔑 API Keys</h2>
+          <button class="btn btn-primary btn-sm" onclick="openAddKeyModal()">+ Add Key</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table><thead><tr>
+            <th>Provider</th><th>Key (masked)</th><th>Source</th><th>Actions</th>
+          </tr></thead><tbody id="keysTable"><tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody></table></div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">Provider → Env Var Reference</div>
+          <div style="font-size:12px;line-height:2;color:var(--text-secondary)">
+            <code class="mono">OPENROUTER_API_KEY</code> → OpenRouter &nbsp;·&nbsp;
+            <code class="mono">GROQ_API_KEY</code> → Groq &nbsp;·&nbsp;
+            <code class="mono">GEMINI_API_KEY</code> → Gemini &nbsp;·&nbsp;
+            <code class="mono">CEREBRAS_API_KEY</code> → Cerebras &nbsp;·&nbsp;
+            <code class="mono">NVIDIA_NIM_API_KEY</code> → NVIDIA &nbsp;·&nbsp;
+            <code class="mono">TOGETHER_API_KEY</code> → Together &nbsp;·&nbsp;
+            <code class="mono">FIREWORKS_API_KEY</code> → Fireworks &nbsp;·&nbsp;
+            <code class="mono">DEEPINFRA_API_KEY</code> → DeepInfra &nbsp;·&nbsp;
+            <code class="mono">NOVITA_API_KEY</code> → Novita &nbsp;·&nbsp;
+            <code class="mono">HYPERBOLIC_API_KEY</code> → Hyperbolic &nbsp;·&nbsp;
+            <code class="mono">SAMBANOVA_API_KEY</code> → SambaNova &nbsp;·&nbsp;
+            <code class="mono">PERPLEXITY_API_KEY</code> → Perplexity &nbsp;·&nbsp;
+            <code class="mono">NEBIUS_API_KEY</code> → Nebius &nbsp;·&nbsp;
+            <code class="mono">TAVILY_API_KEY</code> → Web Search
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SETTINGS VIEW ===== -->
+      <div class="view" id="view-settings">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:16px">⚙️ Settings</h2>
+        <div class="card">
+          <div class="card-title">Routing Profile</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Default Profile</label>
+              <select class="input" id="setProfile">
+                <option value="balanced">Balanced</option>
+                <option value="speed">Speed</option>
+                <option value="quality">Quality</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Web Search Mode</label>
+              <select class="input" id="setWebMode">
+                <option value="off">Off</option>
+                <option value="auto">Auto</option>
+                <option value="on">On</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="saveSettings()">Save Settings</button></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Token Budgets</div>
+          <div class="form-row">
+            <div class="form-group"><label>Expert Max Tokens</label><input class="input" type="number" id="setExpertTokens" min="100" max="32000"></div>
+            <div class="form-group"><label>Judge Max Tokens</label><input class="input" type="number" id="setJudgeTokens" min="100" max="32000"></div>
+            <div class="form-group"><label>Synthesis Max Tokens</label><input class="input" type="number" id="setSynthTokens" min="100" max="64000"></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="saveTokens()">Save Tokens</button></div>
+        </div>
+      </div>
+
+      <!-- ===== ENVIRONMENT VIEW ===== -->
+      <div class="view" id="view-env">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:16px">🌐 Environment Variables</h2>
+        <div class="card">
+          <div class="card-title">Variables</div>
+          <div class="card-subtitle">Edit environment variables below. Changes are written to <code style="font-family:var(--font-mono);font-size:12px">.env</code> and applied immediately. Secret values are masked.</div>
+          <div class="env-grid" id="envGrid"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Add / Override Variable</div>
+          <div class="form-row">
+            <div class="form-group" style="max-width:250px">
+              <label>Key</label>
+              <input class="input" id="envNewKey" placeholder="e.g. GROQ_API_KEY" list="envKeyList">
+              <datalist id="envKeyList"></datalist>
+            </div>
+            <div class="form-group">
+              <label>Value</label>
+              <input class="input" id="envNewValue" placeholder="API key or value" type="password">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="setEnvVar()">Set Variable</button>
+            <button class="btn btn-secondary" onclick="refreshEnvVars()">Refresh</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MEMORY VIEW ===== -->
+      <div class="view" id="view-memory">
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:16px">💾 Session Memory</h2>
+        <div class="card">
+          <div class="form-row">
+            <div class="form-group" style="max-width:300px">
+              <label>Session ID</label>
+              <input class="input" id="memSessionId" value="default" placeholder="Session ID">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="loadMemory()">Load Memory</button>
+            <button class="btn btn-danger" onclick="clearMemory()">Clear Memory</button>
+          </div>
+        </div>
+        <div class="card" id="memoryContent" style="display:none">
+          <div class="card-title">Messages</div>
+          <div id="memoryMessages"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-overlay" id="addProviderModal">
+  <div class="modal">
+    <h3>🏢 Add Custom Provider</h3>
+    <div class="form-group"><label>Provider ID</label><input class="input" id="modalProvId" placeholder="my-provider"></div>
+    <div style="height:8px"></div>
+    <div class="form-group"><label>Label</label><input class="input" id="modalProvLabel" placeholder="My Provider"></div>
+    <div style="height:8px"></div>
+    <div class="form-group"><label>Endpoint (HTTPS only)</label><input class="input" id="modalProvEndpoint" placeholder="https://api.example.com/v1/chat/completions"></div>
+    <div style="height:8px"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Speed Class</label><select class="input" id="modalProvSpeed"><option value="fast">Fast</option><option value="medium">Medium</option><option value="slow">Slow</option></select></div>
+      <div class="form-group"><label>Quality Class</label><select class="input" id="modalProvQual"><option value="excellent">Excellent</option><option value="good">Good</option><option value="average">Average</option></select></div>
+      <div class="form-group"><label>Max Tokens</label><input class="input" type="number" id="modalProvTokens" value="8192" min="1" max="100000"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addProviderModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addProvider()">Add Provider</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addModelModal">
+  <div class="modal">
+    <h3>🤖 Add Custom Model</h3>
+    <div class="form-group"><label>Model Key (unique ID)</label><input class="input" id="modalModelKey" placeholder="my-model"></div>
+    <div style="height:8px"></div>
+    <div class="form-group"><label>Provider ID</label><input class="input" id="modalModelProv" placeholder="groq"></div>
+    <div style="height:8px"></div>
+    <div class="form-group"><label>Title</label><input class="input" id="modalModelTitle" placeholder="My Custom Model"></div>
+    <div style="height:8px"></div>
+    <div class="form-group"><label>Model ID (provider's model name)</label><input class="input" id="modalModelId" placeholder="llama-3.3-70b"></div>
+    <div style="height:8px"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Use As</label><select class="input" id="modalModelUseAs" multiple style="height:80px"><option value="expert" selected>Expert</option><option value="judge">Judge</option><option value="synthesis">Synthesis</option></select></div>
+      <div class="form-group"><label>Speed</label><select class="input" id="modalModelSpeed"><option value="fast">Fast</option><option value="medium">Medium</option><option value="slow">Slow</option></select></div>
+      <div class="form-group"><label>Quality</label><select class="input" id="modalModelQual"><option value="excellent">Excellent</option><option value="good">Good</option><option value="average">Average</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addModelModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addModel()">Add Model</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addKeyModal">
+  <div class="modal">
+    <h3>🔑 Add API Key</h3>
+    <div class="form-group"><label>Provider ID</label>
+      <select class="input" id="modalKeyProv">
+        <option value="openrouter">OpenRouter</option>
+        <option value="groq">Groq Cloud</option>
+        <option value="gemini">Google Gemini</option>
+        <option value="cerebras">Cerebras</option>
+        <option value="nvidia_nim">NVIDIA NIM</option>
+        <option value="together">Together AI</option>
+        <option value="fireworks">Fireworks AI</option>
+        <option value="deepinfra">DeepInfra</option>
+        <option value="novita">Novita AI</option>
+        <option value="hyperbolic">Hyperbolic</option>
+        <option value="sambanova">SambaNova</option>
+        <option value="perplexity">Perplexity AI</option>
+        <option value="nebius">Nebius AI</option>
+        <option value="tavily">Tavily (Web Search)</option>
+      </select>
+    </div>
+    <div style="height:8px"></div>
+    <div class="form-group"><label>API Key</label><input class="input" id="modalKeyValue" placeholder="sk-... or gsk_..." type="password"></div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal('addKeyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addApiKey()">Save Key</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="envEditModal">
+  <div class="modal">
+    <h3>🌐 Edit Environment Variable</h3>
+    <div class="form-group"><label>Key</label><input class="input" id="modalEnvKey" readonly style="font-family:var(--font-mono)"></div>
+    <div style="height:8px"></div>
+    <div class="form-group"><label>Value</label><input class="input" id="modalEnvValue" type="password" placeholder="New value"></div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeModal('envEditModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEnvVarFromModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✓</span><span id="toastText"></span></div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+const STATE = { sessionId: 'default', healthInterval: null };
+
+// ── Utils ──────────────────────────────────────────────
+function $(id){return document.getElementById(id)}
+function api(path, opts={}){
+  const headers={...opts.headers};
+  if(opts.body)headers['Content-Type']='application/json';
+  return fetch(path,{headers,...opts})
+}
+function showToast(msg, type='success'){const t=$('toast');$('toastText').textContent=msg;$('toastIcon').textContent=type==='success'?'✓':'✗';t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3500)}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function openModal(id){document.getElementById(id).classList.add('open')}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+// ── View Switching ────────────────────────────────────
+function switchView(view){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const vw=document.getElementById('view-'+view);
+  if(vw)vw.classList.add('active');
+  const titles={chat:'💬 Chat',dashboard:'📊 Dashboard',providers:'🏢 Providers',models:'🤖 Models',keys:'🔑 API Keys',settings:'⚙️ Settings',env:'🌐 Environment',memory:'💾 Memory'};
+  $('viewTitle').textContent=titles[view]||view;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  // Refresh data on switch
+  if(view==='dashboard')refreshDashboard();
+  if(view==='providers')refreshProviders();
+  if(view==='models')refreshModels();
+  if(view==='keys')refreshKeys();
+  if(view==='settings')refreshSettings();
+  if(view==='env')refreshEnvVars();
+}
+
+// ── Health Check ───────────────────────────────────────
+async function checkHealth(){
+  try{
+    const r=await api('/health');const d=await r.json();
+    $('statusDot').className='dot online';
+    $('statusText').textContent='Online';
+    return d;
+  }catch(e){
+    $('statusDot').className='dot offline';
+    $('statusText').textContent='Offline';
+    return null;
+  }
+}
+
+// ── Dashboard ──────────────────────────────────────────
+async function refreshDashboard(){
+  const health=await checkHealth();
+  if(health){
+    $('dashHealth').textContent='✅';$('dashHealth').style.color='var(--green)';
+    $('dashUptime').textContent=formatUptime(health.uptime);
+  }
+  try{
+    const [pr, mr, kr]=await Promise.all([
+      api('/providers').then(r=>r.json()),
+      api('/models').then(r=>r.json()),
+      api('/keys').then(r=>r.json()),
+    ]);
+    $('dashProviders').textContent=pr.providers?.length||0;
+    $('dashModels').textContent=mr.models?.length||0;
+    $('dashKeys').textContent=kr.keys?.length||0;
+    const sr=await api('/settings').then(r=>r.json());
+    $('dashProfile').textContent=sr.settings?.profile||'-';
+    $('serverInfo').innerHTML=
+      '<strong>Version:</strong> 1.0.0<br>'+
+      '<strong>Node.js:</strong> '+navigator.userAgent.match(/Node\.js\/([\d.]+)/)?.[1]||'—'+'<br>'+
+      '<strong>Database:</strong> SQLite (libsql)<br>'+
+      '<strong>Mode:</strong> '+(health?'Running':'Offline');
+  }catch(e){$('dashProviders').textContent='—';$('dashModels').textContent='—';$('dashKeys').textContent='—'}
+}
+
+// ── Providers ──────────────────────────────────────────
+async function refreshProviders(){
+  try{
+    const r=await api('/providers');const d=await r.json();
+    const t=$('providersTable');
+    if(!d.providers||d.providers.length===0){t.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-muted)">No providers configured.</td></tr>';return}            t.innerHTML=d.providers.map(p=>{
+      const en=p.enabled?'✅':'❌';
+      const key=p.hasCredential?'🔑':'❌';
+      const toggleAction=p.enabled?'disableprovider':'enableprovider';
+      const toggleLabel=p.enabled?'Disable':'Enable';
+      const toggleClass=p.enabled?'btn-secondary':'btn-primary';
+      return '<tr>'+
+        '<td>'+en+'</td>'+
+        '<td><strong>'+esc(p.label)+'</strong><br><code class="key">'+esc(p.id)+'</code></td>'+
+        '<td><code class="key">'+esc(p.endpoint?.slice(0,60))+'…</code></td>'+
+        '<td><span class="tag tag-blue">'+esc(p.speedClass)+'</span></td>'+
+        '<td><span class="tag tag-accent">'+esc(p.qualityClass)+'</span></td>'+
+        '<td>'+key+'</td>'+
+        '<td><span class="tag '+(p.isPreset?'tag-yellow':'tag-green')+'">'+(p.isPreset?'built-in':'custom')+'</span></td>'+
+        '<td style="white-space:nowrap">'+
+          (p.isPreset?'':'<button class="btn btn-sm '+toggleClass+'" onclick="toggleProvider(\''+esc(p.id)+'\',!'+p.enabled+')">'+toggleLabel+'</button> ')+
+          (p.isPreset?'':('<button class="btn btn-sm btn-danger" onclick="deleteProvider(\''+esc(p.id)+'\')">Delete</button>'))+
+        '</td>'+
+        '</tr>'
+    }).join('');
+  }catch(e){$('providersTable').innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--red)">Error loading providers.</td></tr>'}
+}
+
+async function addProvider(){
+  const id=$('modalProvId').value.trim();const label=$('modalProvLabel').value.trim()||id;
+  const endpoint=$('modalProvEndpoint').value.trim();const speedClass=$('modalProvSpeed').value;
+  const qualityClass=$('modalProvQual').value;const maxOutputTokens=parseInt($('modalProvTokens').value)||8192;
+  if(!id||!endpoint){showToast('Provider ID and endpoint are required.','error');return}
+  try{
+    const r=await api('/providers',{method:'POST',body:JSON.stringify({id,label,endpoint,speedClass,qualityClass,maxOutputTokens})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Failed','error');return}
+    showToast('Provider '+id+' added successfully!');
+    closeModal('addProviderModal');
+    $('modalProvId').value='';$('modalProvLabel').value='';$('modalProvEndpoint').value='';
+    refreshProviders();
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function toggleProvider(id,enabled){
+  const action=enabled?'enable':'disable';
+  try{
+    const r=await api('/providers/'+encodeURIComponent(id)+'/toggle',{method:'PATCH',body:JSON.stringify({enabled})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Failed to toggle','error');return}
+    showToast('Provider '+(enabled?'enabled':'disabled')+': '+id);
+    refreshProviders();
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function deleteProvider(id){
+  if(!confirm('Delete provider "'+id+'"?'))return;
+  try{
+    const r=await api('/providers/'+encodeURIComponent(id),{method:'DELETE'});
+    if(!r.ok){showToast('Failed to delete','error');return}
+    showToast('Provider deleted');
+    refreshProviders();
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+function openAddProviderModal(){$('modalProvId').value='';$('modalProvLabel').value='';$('modalProvEndpoint').value='';$('modalProvSpeed').value='medium';$('modalProvQual').value='good';$('modalProvTokens').value='8192';openModal('addProviderModal')}
+
+// ── Models ─────────────────────────────────────────────
+async function refreshModels(){
+  try{
+    const r=await api('/models');const d=await r.json();
+    const t=$('modelsTable');
+    if(!d.models||d.models.length===0){t.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text-muted)">No models configured.</td></tr>';return}
+    t.innerHTML=d.models.map(m=>{
+      const en=m.enabled?'✅':'❌';
+      const key=m.hasCredential?'🔑':'❌';
+      return '<tr>'+
+        '<td>'+en+'</td>'+
+        '<td><code class="mono">'+esc(m.id)+'</code></td>'+
+        '<td>'+esc(m.title)+'</td>'+
+        '<td><code class="key">'+esc(m.providerId)+'</code></td>'+
+        '<td><code class="key">'+esc(m.model)+'</code></td>'+
+        '<td>'+esc((m.useAs||[]).join(', '))+'</td>'+
+        '<td><span class="tag tag-blue">'+esc(m.speedClass)+'</span></td>'+
+        '<td><span class="tag tag-accent">'+esc(m.qualityClass)+'</span></td>'+
+        '<td>'+key+'</td>'+
+        '<td>'+(m.isPreset?'':('<button class="btn btn-sm btn-danger" onclick="deleteModel(\''+esc(m.id)+'\')">Delete</button>'))+'</td>'+
+        '</tr>'
+    }).join('');
+  }catch(e){$('modelsTable').innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--red)">Error loading models.</td></tr>'}
+}
+
+async function addModel(){
+  const key=$('modalModelKey').value.trim();const provider=$('modalModelProv').value.trim();
+  const title=$('modalModelTitle').value.trim()||key;const model=$('modalModelId').value.trim();
+  const useAs=Array.from($('modalModelUseAs').selectedOptions).map(o=>o.value);
+  const speedClass=$('modalModelSpeed').value;const qualityClass=$('modalModelQual').value;
+  if(!key||!provider||!model){showToast('Key, provider, and model ID are required.','error');return}
+  try{
+    const r=await api('/models',{method:'POST',body:JSON.stringify({key,provider,title,model,useAs,speedClass,qualityClass})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Failed','error');return}
+    showToast('Model '+key+' added!');
+    closeModal('addModelModal');
+    $('modalModelKey').value='';$('modalModelProv').value='';$('modalModelTitle').value='';$('modalModelId').value='';
+    refreshModels();
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function deleteModel(key){
+  if(!confirm('Delete model "'+key+'"?'))return;
+  try{
+    const r=await api('/models/'+encodeURIComponent(key),{method:'DELETE'});
+    if(!r.ok){showToast('Failed to delete','error');return}
+    showToast('Model deleted');
+    refreshModels();
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+function openAddModelModal(){$('modalModelKey').value='';$('modalModelProv').value='';$('modalModelTitle').value='';$('modalModelId').value='';$('modalModelSpeed').value='medium';$('modalModelQual').value='good';openModal('addModelModal')}
+
+// ── API Keys ───────────────────────────────────────────
+async function refreshKeys(){
+  try{
+    const r=await api('/keys');const d=await r.json();
+    const t=$('keysTable');
+    if(!d.keys||d.keys.length===0){t.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">No API keys configured.</td></tr>';return}
+    t.innerHTML=d.keys.map(k=>{
+      const sourceTag=k.source==='env'?'<span class="tag tag-blue">env</span>':'<span class="tag tag-green">db</span>';
+      return '<tr>'+
+        '<td><code class="mono">'+esc(k.providerId)+'</code></td>'+
+        '<td><code class="key">'+esc(k.maskedKey)+'</code></td>'+
+        '<td>'+sourceTag+'</td>'+
+        '<td>'+(k.source==='db'?'<button class="btn btn-sm btn-danger" onclick="deleteKey(\''+esc(k.providerId)+'\')">Delete</button>':'<span class="tag tag-yellow">read-only</span>')+'</td>'+
+        '</tr>'
+    }).join('');
+  }catch(e){$('keysTable').innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--red)">Error loading keys.</td></tr>'}
+}
+
+async function addApiKey(){
+  const providerId=$('modalKeyProv').value;const apiKey=$('modalKeyValue').value.trim();
+  if(!apiKey){showToast('API key is required.','error');return}
+  try{
+    const r=await api('/keys',{method:'POST',body:JSON.stringify({providerId,apiKey})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Failed','error');return}
+    showToast('API key saved for '+providerId+'!');
+    closeModal('addKeyModal');
+    $('modalKeyValue').value='';
+    refreshKeys();
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function deleteKey(providerId){
+  if(!confirm('Delete API key for "'+providerId+'"?'))return;
+  try{
+    const r=await api('/keys/'+encodeURIComponent(providerId),{method:'DELETE'});
+    if(!r.ok){showToast('Not found or cannot delete env keys','error');return}
+    showToast('Key deleted');
+    refreshKeys();
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+function openAddKeyModal(){$('modalKeyValue').value='';openModal('addKeyModal')}
+
+// ── Settings ───────────────────────────────────────────
+async function refreshSettings(){
+  try{
+    const r=await api('/settings');const d=await r.json();
+    const s=d.settings||{};
+    $('setProfile').value=s.profile||'balanced';
+    $('setWebMode').value=s.webMode||'off';
+    $('setExpertTokens').value=s.expertMaxTokens||2500;
+    $('setJudgeTokens').value=s.judgeMaxTokens||1800;
+    $('setSynthTokens').value=s.synthesisMaxTokens||5000;
+  }catch(e){}
+}
+
+async function saveSettings(){
+  const profile=$('setProfile').value;const webMode=$('setWebMode').value;
+  try{
+    const r=await api('/settings',{method:'POST',body:JSON.stringify({profile,webMode})});
+    await r.json();
+    showToast('Settings saved!');
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function saveTokens(){
+  const expertMaxTokens=parseInt($('setExpertTokens').value)||2500;
+  const judgeMaxTokens=parseInt($('setJudgeTokens').value)||1800;
+  const synthesisMaxTokens=parseInt($('setSynthTokens').value)||5000;
+  try{
+    const r=await api('/settings',{method:'POST',body:JSON.stringify({expertMaxTokens,judgeMaxTokens,synthesisMaxTokens})});
+    await r.json();
+    showToast('Token settings saved!');
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+// ── Environment ────────────────────────────────────────
+async function refreshEnvVars(){
+  try{
+    const r=await api('/api/env');const d=await r.json();
+    const grid=$('envGrid');
+    const envKeys=[
+      {k:'PORT',label:'Port'},{k:'NODE_ENV',label:'Environment'},{k:'DATABASE_URL',label:'Database URL'},
+      {k:'FUSION_SECRET_KEY',label:'Secret Key'},{k:'TELEGRAM_BOT_TOKEN',label:'Telegram Token'},
+      {k:'TELEGRAM_WEBHOOK_URL',label:'Telegram Webhook'},{k:'TAVILY_API_KEY',label:'Tavily (Search)'},
+      {k:'OPENROUTER_API_KEY',label:'OpenRouter'},{k:'GROQ_API_KEY',label:'Groq'},
+      {k:'GEMINI_API_KEY',label:'Gemini'},{k:'CEREBRAS_API_KEY',label:'Cerebras'},
+      {k:'NVIDIA_NIM_API_KEY',label:'NVIDIA NIM'},{k:'TOGETHER_API_KEY',label:'Together'},
+      {k:'FIREWORKS_API_KEY',label:'Fireworks'},{k:'DEEPINFRA_API_KEY',label:'DeepInfra'},
+      {k:'NOVITA_API_KEY',label:'Novita'},{k:'HYPERBOLIC_API_KEY',label:'Hyperbolic'},
+      {k:'SAMBANOVA_API_KEY',label:'SambaNova'},{k:'PERPLEXITY_API_KEY',label:'Perplexity'},
+      {k:'NEBIUS_API_KEY',label:'Nebius'},{k:'FUSION_DEFAULT_PROFILE',label:'Default Profile'},
+      {k:'FUSION_MAX_EXPERTS',label:'Max Experts'},{k:'FUSION_EXPERT_MAX_TOKENS',label:'Expert Tokens'},
+      {k:'FUSION_JUDGE_MAX_TOKENS',label:'Judge Tokens'},{k:'FUSION_SYNTHESIS_MAX_TOKENS',label:'Synthesis Tokens'},
+    ];
+    // Build datalist
+    $('envKeyList').innerHTML=envKeys.map(e=>'<option value="'+e.k+'">'+e.label+'</option>').join('');
+    // Build grid
+    const vars=d.variables||[];
+    grid.innerHTML=envKeys.map(e=>{
+      const v=vars.find(x=>x.key===e.k);
+      const val=v?v.value:'';
+      const src=v?v.source:'unset';
+      const cls=src==='unset'?'val unset':'val';
+      const display=src==='unset'?'(not set)':(val||'(empty)');
+      return '<div class="env-row">'+
+        '<span class="key" title="'+e.label+'">'+e.k+'</span>'+
+        '<span class="'+cls+'">'+esc(display)+'</span>'+
+        '<span class="actions">'+
+        '<button class="btn btn-sm btn-secondary" onclick="openEnvEdit(\''+e.k+'\')">Edit</button>'+
+        '</span></div>'
+    }).join('');
+  }catch(e){$('envGrid').innerHTML='<div style="color:var(--red)">Error loading env vars.</div>'}
+}
+
+function openEnvEdit(key){
+  $('modalEnvKey').value=key;
+  $('modalEnvValue').value='';
+  openModal('envEditModal');
+}
+
+async function saveEnvVarFromModal(){
+  const key=$('modalEnvKey').value;const value=$('modalEnvValue').value.trim();
+  if(!value){showToast('Value is required','error');return}
+  await setEnvVarDirect(key,value);
+  closeModal('envEditModal');
+}
+
+async function setEnvVar(){
+  const key=$('envNewKey').value.trim();const value=$('envNewValue').value.trim();
+  if(!key||!value){showToast('Key and value are required','error');return}
+  await setEnvVarDirect(key,value);
+  $('envNewKey').value='';$('envNewValue').value='';
+}
+
+async function setEnvVarDirect(key,value){
+  try{
+    const r=await api('/api/env',{method:'POST',body:JSON.stringify({key,value})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Failed','error');return}
+    showToast(key+' updated!');
+    refreshEnvVars();
+    // If it's a provider key, refresh providers/models too
+    if(key.endsWith('_API_KEY')){refreshProviders();refreshModels();refreshKeys()}
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+// ── Memory ─────────────────────────────────────────────
+async function loadMemory(){
+  const sessionId=$('memSessionId').value.trim()||'default';
+  try{
+    const r=await api('/memory/'+encodeURIComponent(sessionId));
+    const d=await r.json();
+    const c=$('memoryMessages');const ct=$('memoryContent');
+    if(!d.messages||d.messages.length===0){
+      c.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:20px">No messages in this session.</div>';
+      ct.style.display='block';return
+    }
+    c.innerHTML=d.messages.map(m=>
+      '<div style="padding:8px 0;border-bottom:1px solid var(--border)">'+
+      '<span class="tag '+(m.role==='user'?'tag-blue':'tag-accent')+'">'+esc(m.role)+'</span> '+
+      '<span style="font-size:12px;color:var(--text-secondary)">'+esc(m.content.slice(0,500))+'</span>'+
+      '</div>'
+    ).join('');
+    ct.style.display='block';
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function clearMemory(){
+  const sessionId=$('memSessionId').value.trim()||'default';
+  if(!confirm('Clear all messages for session "'+sessionId+'"?'))return;
+  try{
+    const r=await api('/memory/'+encodeURIComponent(sessionId),{method:'DELETE'});
+    if(!r.ok){showToast('Failed to clear','error');return}
+    showToast('Memory cleared!');
+    $('memoryContent').style.display='none';
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+// ── Chat ───────────────────────────────────────────────
+async function sendChat(){
+  const input=$('chatInput');const msg=input.value.trim();
+  if(!msg)return;
+  input.value='';
+  const sessionId=$('chatSessionId').value.trim()||'default';
+  const profile=$('chatProfile').value;
+  const web=$('chatWeb').value;
+  STATE.sessionId=sessionId;
+
+  // Add user message
+  addChatMessage('user',msg);
+  // Add typing indicator
+  const typing=document.createElement('div');
+  typing.className='typing-indicator';typing.id='typingIndicator';
+  typing.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  $('chatMessages').appendChild(typing);
+  $('chatMessages').scrollTop=$('chatMessages').scrollHeight;
+
+  try{
+    const r=await api('/chat',{method:'POST',body:JSON.stringify({message:msg,sessionId,profile,web})});
+    const d=await r.json();
+    // Remove typing indicator
+    const ti=document.getElementById('typingIndicator');
+    if(ti)ti.remove();
+    if(d.answer){addChatMessage('assistant',d.answer,d.meta)}
+    else if(d.error){addChatMessage('assistant','Error: '+d.error.message)}
+    else{addChatMessage('assistant','(Empty response)')}
+  }catch(e){
+    const ti=document.getElementById('typingIndicator');
+    if(ti)ti.remove();
+    addChatMessage('assistant','Error: '+e.message+(e.message.includes('fetch')?' — Is the server running?':''));
+  }
+}
+
+function addChatMessage(role,content,meta){
+  const c=$('chatMessages');
+  const div=document.createElement('div');
+  div.className='chat-msg '+role;
+  const label=role==='user'?'You':'Free Model Fusion';
+  let metaHtml='';
+  let body=esc(content);
+  // Simple markdown-ish formatting
+  body=body.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  body=body.replace(/`([^`]+)`/g,'<code>$1</code>');
+  body=body.replace(/```(\w*)\n?([\s\S]*?)```/g,'<pre><code>$2</code></pre>');
+  body=body.replace(/\n/g,'<br>');
+  if(meta){
+    const r=meta.routing||{};const m=meta.models||{};const mem=meta.memory||{};
+    const parts=[];
+    if(r.profile)parts.push('Profile: '+r.profile);
+    if(r.expertsUsed!==undefined)parts.push('Experts: '+r.expertsUsed+(r.judgeUsed?', Judge: ✓':''));
+    if(m.experts&&m.experts.length)parts.push('Models: '+m.experts.join(', '));
+    if(mem.sessionId)parts.push('Session: '+mem.sessionId);
+    if(parts.length)metaHtml='<div class="msg-meta">'+parts.join(' · ')+'</div>';
+  }
+  div.innerHTML='<div class="msg-label">'+label+'</div><div class="msg-body">'+body+'</div>'+metaHtml;
+  // Remove empty state
+  const empty=c.querySelector('[style*="text-align:center"]');
+  if(empty)empty.remove();
+  c.appendChild(div);
+  c.scrollTop=c.scrollHeight;
+}
+
+function clearChat(){
+  $('chatMessages').innerHTML=
+    '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px">Chat cleared. Start a new conversation.</div>';
+}
+
+// ── Helpers ────────────────────────────────────────────
+function esc(s){if(!s)return '';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function formatUptime(s){const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=Math.floor(s%60);if(h>0)return h+'h '+m+'m';if(m>0)return m+'m '+sec+'s';return sec+'s'}
+
+// ── Init ───────────────────────────────────────────────
+async function init(){
+  // Mobile menu
+  if(window.innerWidth<=768)document.getElementById('menuBtn').style.display='flex';
+  window.addEventListener('resize',()=>{
+    document.getElementById('menuBtn').style.display=window.innerWidth<=768?'flex':'none'
+  });
+  // Health polling
+  await checkHealth();
+  setInterval(checkHealth,10000);
+  // Initial data load for dashboard
+  await refreshDashboard();
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
