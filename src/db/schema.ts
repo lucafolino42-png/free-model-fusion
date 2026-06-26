@@ -49,6 +49,16 @@ export const customProviders = sqliteTable('custom_providers', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+// ─── Provider Overrides (preset enable/disable) ─────────
+// Presets are immutable data; this table stores enabled overrides keyed by
+// provider id so users can enable/disable built-in providers without copying
+// them into custom_providers.
+export const providerOverrides = sqliteTable('provider_overrides', {
+  providerId: text('provider_id').primaryKey(),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
 // ─── Custom Models ───────────────────────────────────────
 export const customModels = sqliteTable('custom_models', {
   id: text('id').primaryKey(), // model_key
@@ -80,6 +90,8 @@ export type Credential = typeof credentials.$inferSelect;
 export type NewCredential = typeof credentials.$inferInsert;
 export type CustomProvider = typeof customProviders.$inferSelect;
 export type NewCustomProvider = typeof customProviders.$inferInsert;
+export type ProviderOverride = typeof providerOverrides.$inferSelect;
+export type NewProviderOverride = typeof providerOverrides.$inferInsert;
 export type CustomModel = typeof customModels.$inferSelect;
 export type NewCustomModel = typeof customModels.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
