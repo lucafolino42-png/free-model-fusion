@@ -1,5 +1,5 @@
 import { db } from '../db/client.js';
-import { customProviders, customModels, credentials } from '../db/schema.js';
+import { customProviders, customModels, credentials, providerOverrides } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { providerPresets, modelPresets } from './presets.js';
 import { hasCredential as checkCredential } from './credentials.js';
@@ -14,11 +14,26 @@ import type {
   ProviderPreset,
 } from './types.js';
 
+// ─── Apply Provider Overrides (pure) ─────────────────────
+// Overlays preset default `enabled` with any override rows. Presets are
+// immutable data; overrides let users enable/disable built-ins without
+// copying them into custom_providers. Exported for unit testing.
+export function applyProviderOverrides(
+  providers: RegisteredProvider[],
+  overrides: Array<{ providerId: string; enabled: boolean }>
+): RegisteredProvider[] {
+  const byId = new Map(overrides.map((o) => [o.providerId, o.enabled]));
+  return providers.map((p) =>
+    byId.has(p.id) ? { ...p, enabled: byId.get(p.id)! } : p
+  );
+}
+
 // ─── Get All Providers ───────────────────────────────────
 export async function getAllProviders(): Promise<RegisteredProvider[]> {
-  const [dbCustomProviders, creds] = await Promise.all([
+  const [dbCustomProviders, creds, overrides] = await Promise.all([
     db.select().from(customProviders),
     db.select().from(credentials),
+    db.select().from(providerOverrides),
   ]);
 
   const dbCreds = new Set(creds.map((c) => c.providerId));
@@ -53,7 +68,7 @@ export async function getAllProviders(): Promise<RegisteredProvider[]> {
     isPreset: false,
   }));
 
-  return [...builtIns, ...customs];
+  return applyProviderOverrides([...builtIns, ...customs], overrides);
 }
 
 // ─── Get Enabled Providers ───────────────────────────────
@@ -188,6 +203,9 @@ export async function setProviderEnabled(
   id: string,
   enabled: boolean
 ): Promise<boolean> {
+  const now = new Date();
+
+  // Custom provider: update its row directly.
   const custom = await db
     .select()
     .from(customProviders)
@@ -197,10 +215,26 @@ export async function setProviderEnabled(
   if (custom.length > 0) {
     await db
       .update(customProviders)
-      .set({ enabled, updatedAt: new Date() })
+      .set({ enabled, updatedAt: now })
       .where(eq(customProviders.id, id));
     return true;
   }
+
+  // Preset provider: upsert an override row (presets are immutable data).
+  const preset = providerPresets.find(
+    (p) => p.id === id || p.aliases.includes(id)
+  );
+  if (preset) {
+    await db
+      .insert(providerOverrides)
+      .values({ providerId: preset.id, enabled, updatedAt: now })
+      .onConflictDoUpdate({
+        target: providerOverrides.providerId,
+        set: { enabled, updatedAt: now },
+      });
+    return true;
+  }
+
   return false;
 }
 

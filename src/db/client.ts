@@ -65,6 +65,14 @@ export async function initializeDatabase(): Promise<void> {
     `);
 
     await sqliteClient.execute(`
+      CREATE TABLE IF NOT EXISTS provider_overrides (
+        provider_id TEXT PRIMARY KEY,
+        enabled INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
+    await sqliteClient.execute(`
       CREATE TABLE IF NOT EXISTS custom_models (
         id TEXT PRIMARY KEY,
         provider_id TEXT NOT NULL,

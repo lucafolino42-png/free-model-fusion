@@ -1,4 +1,4 @@
-import { getModelsByRole, getModelById } from '../providers/registry.js';
+import { getEnabledModels, getModelById } from '../providers/registry.js';
 import { config } from '../config.js';
 import type {
   RegisteredModel,
@@ -48,9 +48,15 @@ export async function selectExperts(
     preferredSynthesis?: string | null;
   }
 ): Promise<RoutingResult> {
-  const availableExperts = (await getModelsByRole('expert')).filter((m) => m.hasCredential);
-  const availableJudges = (await getModelsByRole('judge')).filter((m) => m.hasCredential);
-  const availableSynthesis = (await getModelsByRole('synthesis')).filter((m) => m.hasCredential);
+  // Single query: getEnabledModels already filters by enabled; we filter by
+  // role + hasCredential in memory. The prior getModelsByRole(role) approach
+  // ran this 3x (expert/judge/synthesis), each re-fetching all models +
+  // providers + credentials (6+ DB round-trips per chat).
+  const allEnabled = await getEnabledModels();
+  const withCreds = allEnabled.filter((m) => m.hasCredential);
+  const availableExperts = withCreds.filter((m) => m.useAs.includes('expert'));
+  const availableJudges = withCreds.filter((m) => m.useAs.includes('judge'));
+  const availableSynthesis = withCreds.filter((m) => m.useAs.includes('synthesis'));
 
   // Handle custom profile
   if (profile === 'custom' && overrides?.preferredExperts?.length) {
@@ -175,7 +181,7 @@ function deduplicateProviders(
 }
 
 // ─── Pick Best Model for Role ────────────────────────────
-function pickBestForRole(
+export function pickBestForRole(
   models: RegisteredModel[],
   profile: string,
   role: ModelRole
@@ -183,19 +189,19 @@ function pickBestForRole(
   if (models.length === 0) return null;
 
   if (profile === 'speed') {
-    return models.sort(
+    return [...models].sort(
       (a, b) => speedOrder[a.speedClass] - speedOrder[b.speedClass]
     )[0];
   }
 
   if (profile === 'quality') {
-    return models.sort(
+    return [...models].sort(
       (a, b) => qualityOrder[b.qualityClass] - qualityOrder[a.qualityClass]
     )[0];
   }
 
   // Balanced: sort by combined score
-  return models.sort((a, b) => {
+  return [...models].sort((a, b) => {
     const scoreA = speedOrder[a.speedClass] + qualityOrder[a.qualityClass];
     const scoreB = speedOrder[b.speedClass] + qualityOrder[b.qualityClass];
     return scoreA - scoreB;
