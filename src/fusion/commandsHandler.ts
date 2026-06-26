@@ -19,6 +19,29 @@ import { FusionError } from '../utils/errors.js';
 import type { FusionResult, RoutingProfile } from '../providers/types.js';
 import type { RegisteredModel } from '../providers/types.js';
 
+// ─── Error Message Formatters (pure, testable) ──────────
+export function formatAllExpertsFailed(
+  errors: Array<{ provider: string; model: string; error: string }>
+): string {
+  const lines = errors.map((e) => `• ${e.provider} (${e.model}): ${e.error}`);
+  return (
+    'None of the available AI models responded successfully:\n\n' +
+    lines.join('\n') +
+    '\n\nWhat to try:\n' +
+    '- Verify your API keys with /listkeys\n' +
+    '- Enable more providers with /providers'
+  );
+}
+
+export function formatNoExpertsConfigured(): string {
+  return (
+    'No AI models are available. You have not added any provider API keys yet.\n\n' +
+    'Add a key to get started, for example:\n' +
+    '/addkey groq gsk_your_key_here\n\n' +
+    'Then send a message. See /providers for supported providers.'
+  );
+}
+
 // ─── Handle Fusion Command ───────────────────────────────
 export async function handleFusionCommand(
   message: string,
