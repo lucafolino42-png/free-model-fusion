@@ -54,11 +54,16 @@ export async function runSynthesis(
       { maxTokens: config.synthesisMaxTokens, temperature: 0.3 }
     );
 
+    // Treat empty/whitespace-only content as a failure so the caller's
+    // fallback (use the first successful expert response) kicks in instead of
+    // returning a blank answer. Cheap models sometimes return empty content
+    // for trivial prompts or certain refusals.
+    const success = result.content.trim().length > 0;
     return {
       content: result.content,
       modelUsed: synthesisModel.id,
       finishReason: result.finishReason,
-      success: true,
+      success,
     };
   } catch (error) {
     logger.warn(

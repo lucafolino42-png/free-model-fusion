@@ -241,13 +241,17 @@ async function handleChatMessage(
     webContext
   );
 
-  if (!synthesisResult.success && routing.synthesis) {
-    // Fallback: use first expert response
-    synthesisResult = {
-      content: expertResult.responses[0].content,
-      modelUsed: routing.synthesis.id,
-      success: true,
-    };
+  if (!synthesisResult.success) {
+    // Fallback: synthesis failed or returned empty content — use the first
+    // successful expert response so the user always gets an answer when at
+    // least one expert succeeded.
+    if (expertResult.responses.length > 0) {
+      synthesisResult = {
+        content: expertResult.responses[0].content,
+        modelUsed: (routing.synthesis || routing.experts[0]).id,
+        success: true,
+      };
+    }
   }
 
   // Handle truncation
