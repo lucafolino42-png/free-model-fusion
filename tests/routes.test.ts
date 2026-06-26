@@ -96,4 +96,16 @@ describe('HTTP routes (in-process inject)', () => {
     });
     expect(resWithOrigin.headers['access-control-allow-origin']).toBeDefined();
   });
+
+  it('GET /js/utils.js -> 200 with JS content-type (serves the frontend module)', async () => {
+    const res = await app.inject({ method: 'GET', url: '/js/utils.js' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('javascript');
+    expect(res.body).toContain('export function esc');
+  });
+
+  it('GET /js/.. -> 404 (path-traversal guard)', async () => {
+    const res = await app.inject({ method: 'GET', url: '/js/..%2Findex.html' });
+    expect(res.statusCode).toBe(404);
+  });
 });

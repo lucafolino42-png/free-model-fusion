@@ -6,6 +6,7 @@
 <title>Free Model Fusion</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="module" src="/js/utils.js"></script>
 <style>
 /* ── Reset & Variables ───────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1002,12 +1003,12 @@ function clearChat(){
 }
 
 // ── Helpers ────────────────────────────────────────────
-// esc(): escapes <,>,& for safe insertion into HTML text content.
-// Does NOT escape quotes — use escapeAttr() for attribute/string-literal contexts.
-function esc(s){if(!s)return '';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
-// escapeAttr(): escapes <,>,&,',\" for safe use inside HTML attributes and
-// inside JS string literals embedded in onclick="..." attributes.
-function escapeAttr(s){return esc(s).replace(/'/g,'&#39;').replace(/"/g,'&quot;')}
+// esc()/escapeAttr() are defined in /js/utils.js (a tested module). Use the
+// module's versions when available; fall back to inline impls if the module
+// hasn't loaded yet (defensive — the inline script may run before the
+// deferred module in some load orders).
+const esc = window.esc || function(s){if(!s)return '';const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+const escapeAttr = window.escapeAttr || function(s){return esc(s).replace(/'/g,'&#39;').replace(/"/g,'&quot;')};
 function formatUptime(s){const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=Math.floor(s%60);if(h>0)return h+'h '+m+'m';if(m>0)return m+'m '+sec+'s';return sec+'s'}
 
 // ── Init ───────────────────────────────────────────────
