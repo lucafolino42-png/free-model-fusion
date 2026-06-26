@@ -14,8 +14,10 @@ export async function createServer() {
   });
 
   // ─── Plugins ───────────────────────────────────────────
+  // CORS: configurable via CORS_ORIGIN (default '*' for dev; set to a specific
+  // origin in production to lock down cross-origin access to the API).
   await fastify.register(cors, {
-    origin: true,
+    origin: config.corsOrigin === '*' ? true : config.corsOrigin,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   });
 
@@ -50,6 +52,25 @@ export async function createServer() {
         message: statusCode >= 500 ? 'Internal server error' : err.message,
       },
     });
+  });
+
+  // ─── Security Headers (onSend hook; no extra dependency) ─
+  // The SPA uses inline <style> and <script>, so script-src/style-src require
+  // 'unsafe-inline'. Fonts are self-hosted except the Google Fonts CDN link.
+  fastify.addHook('onSend', async (_request, reply, payload) => {
+    reply.header('Content-Security-Policy', [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data:",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+    ].join('; '));
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'DENY');
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    return payload;
   });
 
   // ─── Initialize Database ───────────────────────────────

@@ -17,6 +17,9 @@ export const config = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '',
   telegramWebhookUrl: process.env.TELEGRAM_WEBHOOK_URL || '',
 
+  // CORS (default '*' for local dev; set CORS_ORIGIN to a specific origin to lock down)
+  corsOrigin: process.env.CORS_ORIGIN || '*',
+
   // Web Search
   tavilyApiKey: process.env.TAVILY_API_KEY || '',
 

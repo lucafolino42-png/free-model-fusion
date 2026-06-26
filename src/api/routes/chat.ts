@@ -9,6 +9,10 @@ export function registerChatRoutes(fastify: FastifyInstance): void {
   const f = fastify.withTypeProvider<ZodTypeProvider>();
 
   f.post('/chat', {
+    // Stricter per-route limit: /chat fans out to multiple external provider
+    // APIs (expert panel + judge + synthesis), so it is far more expensive than
+    // the cheap registry/health routes. Caps abuse that would burn provider quota.
+    config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
     schema: {
       body: {
         type: 'object',
@@ -54,6 +58,7 @@ export function registerChatRoutes(fastify: FastifyInstance): void {
   });
 
   f.post('/webhook/chat', {
+    config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
     schema: {
       body: {
         type: 'object',
