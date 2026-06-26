@@ -197,11 +197,10 @@ async function handleChatMessage(
 
   // If all experts fail
   if (expertResult.responses.length === 0) {
-    const errorAnswer = 'All AI models failed to respond. This could be due to:\n' +
-      '- Missing or invalid API keys\n' +
-      '- Provider rate limits or downtime\n' +
-      '- Network issues\n\n' +
-      'Check your credentials with /listkeys and ensure providers are enabled with /providers.';
+    const errorAnswer =
+      routing.experts.length === 0
+        ? formatNoExpertsConfigured()
+        : formatAllExpertsFailed(responseErrors);
 
     const result: FusionResult = {
       answer: errorAnswer,
