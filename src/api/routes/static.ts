@@ -32,6 +32,22 @@ export function registerStaticRoutes(fastify: FastifyInstance): void {
     }
   });
 
+  // Serve JS modules from public/js/ (e.g. /js/utils.js). Guards against path
+  // traversal: reject any segment containing '..' or a backslash.
+  f.get('/js/:filename', async (request, reply) => {
+    const { filename } = request.params as { filename: string };
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      reply.status(404).send();
+      return;
+    }
+    const js = readPublicFile(`js/${filename}`);
+    if (js) {
+      reply.type('text/javascript').send(js);
+    } else {
+      reply.status(404).send();
+    }
+  });
+
   f.get('/', async (_request, reply) => {
     const html = readPublicFile('index.html');
     if (html) {
