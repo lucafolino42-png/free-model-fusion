@@ -1,5 +1,5 @@
 import { db } from '../db/client.js';
-import { customProviders, customModels, credentials } from '../db/schema.js';
+import { customProviders, customModels, credentials, providerOverrides } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { providerPresets, modelPresets } from './presets.js';
 import { hasCredential as checkCredential } from './credentials.js';
@@ -13,6 +13,20 @@ import type {
   QualityClass,
   ProviderPreset,
 } from './types.js';
+
+// ─── Apply Provider Overrides (pure) ─────────────────────
+// Overlays preset default `enabled` with any override rows. Presets are
+// immutable data; overrides let users enable/disable built-ins without
+// copying them into custom_providers. Exported for unit testing.
+export function applyProviderOverrides(
+  providers: RegisteredProvider[],
+  overrides: Array<{ providerId: string; enabled: boolean }>
+): RegisteredProvider[] {
+  const byId = new Map(overrides.map((o) => [o.providerId, o.enabled]));
+  return providers.map((p) =>
+    byId.has(p.id) ? { ...p, enabled: byId.get(p.id)! } : p
+  );
+}
 
 // ─── Get All Providers ───────────────────────────────────
 export async function getAllProviders(): Promise<RegisteredProvider[]> {
