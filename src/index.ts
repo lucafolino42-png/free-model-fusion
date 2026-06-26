@@ -16,16 +16,29 @@ function printBanner(): void {
 
 // ─── Check Secret Key ────────────────────────────────────
 function checkSecretKey(): void {
-  if (!config.secretKey && !config.isDev) {
-    logger.warn(
-      'FUSION_SECRET_KEY is not set. API key encryption is disabled in production. ' +
-        'Set FUSION_SECRET_KEY to a random string of at least 32 characters.'
+  const key = config.secretKey;
+  const tooShort = key.length > 0 && key.length < 32;
+
+  if (!key && config.isProd) {
+    logger.error(
+      'FUSION_SECRET_KEY is not set. Encryption of provider API keys will fail ' +
+        'on first use. Set it to a random string of at least 32 characters ' +
+        '(openssl rand -hex 32).'
     );
+    return;
   }
 
-  if (!config.secretKey && config.isDev) {
+  if (tooShort && config.isProd) {
+    logger.error(
+      `FUSION_SECRET_KEY is only ${key.length} characters; at least 32 are required. ` +
+        'Encryption of provider API keys will fail on first use.'
+    );
+    return;
+  }
+
+  if (!key && config.isDev) {
     logger.info(
-      'Dev mode: using fallback encryption key. ' +
+      'Dev mode: using a machine-specific fallback encryption key. ' +
         'Set FUSION_SECRET_KEY in production.'
     );
   }
