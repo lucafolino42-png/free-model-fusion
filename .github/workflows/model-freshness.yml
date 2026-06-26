@@ -1,0 +1,35 @@
+name: Model ID Freshness
+
+# Verifies that model IDs in src/providers/presets.ts still exist on each
+# provider's live model list. Fails the check when a provider has renamed or
+# retired a model so the drift is caught before it breaks chat requests.
+#
+# Runs weekly (provider model lists change frequently) and on PRs that touch
+# presets.ts. Providers with public model-list endpoints are always checked;
+# auth-required providers are checked only when the corresponding secret is set
+# in the repo (secrets.GROQ_API_KEY, secrets.TOGETHER_API_KEY, etc.).
+
+on:
+  schedule:
+    # 03:30 UTC every Monday
+    - cron: '30 3 * * 1'
+  pull_request:
+    paths:
+      - 'src/providers/presets.ts'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Check model freshness
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+          FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
+        run: npx tsx scripts/checkModelFreshness.ts
