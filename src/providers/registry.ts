@@ -14,6 +14,37 @@ import type {
   ProviderPreset,
 } from './types.js';
 
+// ─── Safe enum parsing from DB text columns ──────────────
+const SPEED_CLASSES = ['very_fast', 'fast', 'medium', 'slow', 'very_slow'] as const;
+const QUALITY_CLASSES = ['basic', 'good', 'strong', 'frontier', 'reasoning'] as const;
+const MODEL_ROLES = ['expert', 'judge', 'synthesis'] as const;
+
+function asSpeedClass(value: string): SpeedClass {
+  return (SPEED_CLASSES as readonly string[]).includes(value)
+    ? (value as SpeedClass)
+    : 'medium';
+}
+
+function asQualityClass(value: string): QualityClass {
+  return (QUALITY_CLASSES as readonly string[]).includes(value)
+    ? (value as QualityClass)
+    : 'good';
+}
+
+function parseModelRoles(value: string): ModelRole[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (r): r is ModelRole => typeof r === 'string' && (MODEL_ROLES as readonly string[]).includes(r)
+      );
+    }
+  } catch {
+    // fall through to default
+  }
+  return ['expert'];
+}
+
 // ─── Apply Provider Overrides (pure) ─────────────────────
 // Overlays preset default `enabled` with any override rows. Presets are
 // immutable data; overrides let users enable/disable built-ins without
@@ -62,8 +93,8 @@ export async function getAllProviders(): Promise<RegisteredProvider[]> {
     aliases: [p.id],
     credentialRef: p.id,
     maxOutputTokens: p.maxOutputTokens,
-    speedClass: p.speedClass as SpeedClass,
-    qualityClass: p.qualityClass as QualityClass,
+    speedClass: asSpeedClass(p.speedClass),
+    qualityClass: asQualityClass(p.qualityClass),
     hasCredential: hasCred(p.id),
     isPreset: false,
   }));
@@ -82,11 +113,8 @@ export async function getProviderById(
   id: string
 ): Promise<RegisteredProvider | undefined> {
   const all = await getAllProviders();
-  let provider = all.find((p) => p.id === id || p.aliases.includes(id));
-  if (!provider) {
-    provider = all.find((p) => p.aliases.includes(id));
-  }
-  return provider;
+  // The single find covers both exact id and alias matches.
+  return all.find((p) => p.id === id || p.aliases.includes(id));
 }
 
 // ─── Get All Models ──────────────────────────────────────
@@ -119,10 +147,10 @@ export async function getAllModels(): Promise<RegisteredModel[]> {
     providerId: m.providerId,
     title: m.title,
     model: m.model,
-    useAs: JSON.parse(m.useAs) as ModelRole[],
+    useAs: parseModelRoles(m.useAs),
     enabled: m.enabled,
-    speedClass: m.speedClass as SpeedClass,
-    qualityClass: m.qualityClass as QualityClass,
+    speedClass: asSpeedClass(m.speedClass),
+    qualityClass: asQualityClass(m.qualityClass),
     maxOutputTokens: m.maxOutputTokens,
     hasCredential: hasCredForProvider(m.providerId),
     isPreset: false,
@@ -151,14 +179,6 @@ export async function getModelsByProvider(
 ): Promise<RegisteredModel[]> {
   const all = await getAllModels();
   return all.filter((m) => m.providerId === providerId);
-}
-
-// ─── Get Models by Role ──────────────────────────────────
-export async function getModelsByRole(
-  role: ModelRole
-): Promise<RegisteredModel[]> {
-  const all = await getEnabledModels();
-  return all.filter((m) => m.useAs.includes(role) && m.hasCredential);
 }
 
 // ─── Add Custom Provider ─────────────────────────────────

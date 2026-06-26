@@ -1,5 +1,15 @@
 import type { RoutingProfile } from '../providers/types.js';
 
+// ─── Profile parsing helper ──────────────────────────────
+const PROFILE_VALUES = ['speed', 'balanced', 'quality', 'custom'] as const;
+
+function asRoutingProfile(value: string | undefined): RoutingProfile | undefined {
+  if (value && (PROFILE_VALUES as readonly string[]).includes(value)) {
+    return value as RoutingProfile;
+  }
+  return undefined;
+}
+
 // ─── Parsed Command Types ────────────────────────────────
 export interface ParsedCommand {
   type: 'message' | 'help' | 'profile' | 'speed' | 'balanced' | 'quality' | 'custom' |
@@ -42,19 +52,21 @@ export function parseCommand(message: string): ParsedCommand {
 
   // /speed|/balanced|/quality|/custom [question]
   if (['/speed', '/balanced', '/quality', '/custom'].includes(cmd)) {
-    const profile = cmd.slice(1) as RoutingProfile;
+    const profile = asRoutingProfile(cmd.slice(1));
+    // cmd is one of the four profile commands, so profile is defined here.
+    const resolved = profile as RoutingProfile;
     return {
-      type: profile as ParsedCommand['type'],
+      type: resolved as ParsedCommand['type'],
       text,
       args,
-      profileOverride: text ? profile : undefined,
+      profileOverride: text ? resolved : undefined,
     };
   }
 
   // /ask speed|balanced|quality <question>
   if (cmd === '/ask') {
-    const subCmd = args[0]?.toLowerCase() as RoutingProfile | undefined;
-    if (subCmd && ['speed', 'balanced', 'quality', 'custom'].includes(subCmd)) {
+    const subCmd = asRoutingProfile(args[0]?.toLowerCase());
+    if (subCmd) {
       return {
         type: subCmd as ParsedCommand['type'],
         text: args.slice(1).join(' '),
