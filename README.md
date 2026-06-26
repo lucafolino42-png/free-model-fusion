@@ -155,10 +155,11 @@ Free Model Fusion supports any OpenAI-compatible API endpoint:
 | `PORT` | `3000` | Server port |
 | `NODE_ENV` | `development` | Environment mode |
 | `DATABASE_URL` | `file:./data/fusion.db` | SQLite database path |
-| `FUSION_SECRET_KEY` | — | Encryption key (min 32 chars) |
+| `FUSION_SECRET_KEY` | — | Encryption key (min 32 chars; required in production) |
 | `TELEGRAM_BOT_TOKEN` | — | Telegram bot token |
 | `TELEGRAM_WEBHOOK_URL` | — | Webhook URL for Telegram |
 | `TAVILY_API_KEY` | — | Tavily web search API key |
+| `CORS_ORIGIN` | `*` | Allowed origins for the API. Set to a specific origin in production |
 | `OPENROUTER_API_KEY` | — | OpenRouter API key |
 | `GROQ_API_KEY` | — | Groq API key |
 | `GEMINI_API_KEY` | — | Google Gemini API key |
@@ -239,7 +240,15 @@ free-model-fusion/
 │   │   ├── telegramHtml.ts   # HTML formatter
 │   │   └── splitTelegram.ts  # Message splitter
 │   ├── api/
-│   │   ├── routes.ts         # HTTP API routes
+│   │   ├── routes/           # HTTP API routes (split by group)
+│   │   │   ├── index.ts      # registerRoutes composition
+│   │   │   ├── chat.ts       # /chat, /webhook/chat
+│   │   │   ├── providers.ts  # /providers CRUD + toggle
+│   │   │   ├── models.ts     # /models CRUD
+│   │   │   ├── keys.ts       # /keys CRUD
+│   │   │   ├── settings.ts   # /settings, /memory
+│   │   │   ├── env.ts        # /api/env
+│   │   │   └── static.ts     # /health, /, /favicon.ico
 │   │   └── schemas.ts        # Zod validation schemas
 │   └── utils/
 │       ├── crypto.ts         # Encryption utilities
