@@ -19,7 +19,8 @@ export async function runSynthesis(
   question: string,
   expertResponses: Array<{ modelId: string; content: string }>,
   judgeEvaluation: string,
-  webContext: string
+  webContext: string,
+  history: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = []
 ): Promise<SynthesisResult> {
   const provider = await getProviderById(synthesisModel.providerId);
   if (!provider || !provider.enabled) {
@@ -46,6 +47,7 @@ export async function runSynthesis(
             webContext
           ),
         },
+        ...history,
         {
           role: 'user',
           content: question,

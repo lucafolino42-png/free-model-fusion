@@ -58,7 +58,7 @@ export async function handleFusionCommand(
   // Route to appropriate handler
   switch (parsed.type) {
     case 'message':
-      return handleChatMessage(normalized.sessionId, parsed.text, normalized.source, parsed.profileOverride);
+      return handleChatMessage(normalized.sessionId, parsed.text, normalized.source, parsed.profileOverride, normalized.web);
 
     // Profile commands
     case 'help':
@@ -70,7 +70,7 @@ export async function handleFusionCommand(
     case 'quality':
     case 'custom':
       if (parsed.text) {
-        return handleChatMessage(normalized.sessionId, parsed.text, normalized.source, parsed.type as RoutingProfile);
+        return handleChatMessage(normalized.sessionId, parsed.text, normalized.source, parsed.type as RoutingProfile, normalized.web);
       }
       return handleSetProfile(normalized.sessionId, parsed.type as RoutingProfile);
 
@@ -145,11 +145,13 @@ async function handleChatMessage(
   sessionId: string,
   message: string,
   source: string,
-  profileOverride?: RoutingProfile
+  profileOverride?: RoutingProfile,
+  webOverride?: 'on' | 'off' | 'auto'
 ): Promise<FusionResult> {
   const session = await getOrCreateSession(sessionId, source);
   const profile = profileOverride || session.profile as RoutingProfile || 'balanced';
-  const webMode = session.webMode as 'on' | 'off' | 'auto';
+  // Per-request web override takes precedence over the session's persisted mode.
+  const webMode = (webOverride ?? session.webMode) as 'on' | 'off' | 'auto';
 
   // Save user message
   await saveMessage(sessionId, 'user', message);
@@ -186,7 +188,7 @@ async function handleChatMessage(
   );
 
   // Run expert panel
-  const expertResult = await runExpertPanel(routing.experts, message);
+  const expertResult = await runExpertPanel(routing.experts, message, history);
 
   const responseErrors: Array<{ provider: string; model: string; error: string }> =
     expertResult.errors.map((e) => ({
@@ -238,7 +240,8 @@ async function handleChatMessage(
     message,
     expertResult.responses,
     judgeResult.evaluation || 'Using expert responses directly.',
-    webContext
+    webContext,
+    history
   );
 
   if (!synthesisResult.success) {
