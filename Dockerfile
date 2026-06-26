@@ -23,6 +23,10 @@ RUN npm ci --ignore-scripts --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 
+# Static assets served by the API (UI, favicon, frontend JS modules).
+# Without these the dashboard, favicon, and /js/utils.js 404 in the container.
+COPY public ./public
+
 # Create data directory for SQLite
 RUN mkdir -p /app/data && chown -R node:node /app/data
 

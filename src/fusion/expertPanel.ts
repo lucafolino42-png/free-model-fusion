@@ -23,7 +23,8 @@ export interface ExpertPanelResult {
 // ─── Run Expert Panel ────────────────────────────────────
 export async function runExpertPanel(
   experts: RegisteredModel[],
-  question: string
+  question: string,
+  history: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = []
 ): Promise<ExpertPanelResult> {
   if (experts.length === 0) {
     logger.warn('No experts available to call');
@@ -32,7 +33,8 @@ export async function runExpertPanel(
 
   logger.info(`Running expert panel with ${experts.length} experts`);
 
-  // Build parallel calls
+  // Build parallel calls. Prior conversation turns are included after the
+  // system prompt so experts are context-aware across a session.
   const calls = await Promise.all(
     experts.map(async (model) => {
       const provider = await getProviderById(model.providerId);
@@ -43,6 +45,7 @@ export async function runExpertPanel(
         modelId: model.model,
         messages: [
           { role: 'system' as const, content: expertExpertPrompt(question) },
+          ...history,
           { role: 'user' as const, content: question },
         ],
         options: {

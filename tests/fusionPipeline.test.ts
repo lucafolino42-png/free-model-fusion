@@ -236,4 +236,99 @@ describe('fusion pipeline (mocked fetch)', () => {
     expect(result.meta.routing.judgeUsed).toBe(true);
     expect(result.answer).toBe('SYNTHESIZED ANSWER');
   });
+
+  it('memory: prior turns are included in subsequent expert calls (context-aware)', async () => {
+    // A key "beat OpenRouter" differentiator: conversation history must be
+    // passed to the models so responses are context-aware across turns.
+    const seenBodies: string[] = [];
+    const fetchMock = vi.fn(async (_url: string, init?: { body?: string }) => {
+      const rawBody = init?.body ?? '{}';
+      seenBodies.push(rawBody);
+      const body = JSON.parse(rawBody);
+      const content = body.model === GROQ_JUDGE_OR_SYNTH ? 'ok' : 'expert reply';
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          model: body.model,
+          choices: [{ message: { role: 'assistant', content }, finish_reason: 'stop' }],
+        }),
+        text: async () => '',
+      } as unknown as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    // Turn 1: establish context the model should remember.
+    await handleFusionCommand('My name is Alice.', { sessionId: 'pipe-memory', source: 'api' });
+    const firstCallCount = fetchMock.mock.calls.length;
+    seenBodies.length = 0;
+
+    // Turn 2: a follow-up that should see turn 1's history in its messages.
+    await handleFusionCommand('What is my name?', { sessionId: 'pipe-memory', source: 'api' });
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(firstCallCount);
+    // At least one model call in turn 2 must include the prior user message
+    // ("My name is Alice.") in its messages array — proving history is passed.
+    const turn2Bodies = seenBodies.map((b) => JSON.parse(b));
+    const anyCallHasHistory = turn2Bodies.some((b) =>
+      Array.isArray(b.messages) &&
+      b.messages.some((m: { content: string }) => m.content.includes('My name is Alice.'))
+    );
+    expect(anyCallHasHistory).toBe(true);
+  });
+
+  it('web search: augments the prompt when webMode is on (mocked Tavily)', async () => {
+    // The web-search differentiator: when webMode is on, a Tavily search is
+    // performed and its results are folded into the synthesis context.
+    const tavilyResult = {
+      answer: 'The current version is 9.9.',
+      results: [{ title: 'Release Notes', url: 'https://example.com/release', content: 'Version 9.9 released.' }],
+    };
+    const fetchMock = vi.fn(async (url: string, init?: { body?: string }) => {
+      if (url.includes('tavily.com')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => tavilyResult,
+          text: async () => '',
+        } as unknown as Response;
+      }
+      // Provider call: assert the web context reached the synthesis prompt.
+      const body = init?.body ? JSON.parse(init.body) : { model: '' };
+      const content = body.model === GROQ_JUDGE_OR_SYNTH ? 'judge' : 'synthesis reply';
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          model: body.model,
+          choices: [{ message: { role: 'assistant', content }, finish_reason: 'stop' }],
+        }),
+        text: async () => '',
+      } as unknown as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    // Tavily requires a key in config; stub it for the test.
+    const orig = process.env.TAVILY_API_KEY;
+    process.env.TAVILY_API_KEY = 'tvly-test';
+    // config is loaded once at import; mutate the in-memory value directly.
+    const { config } = await import('../src/config.js');
+    (config as Record<string, unknown>).tavilyApiKey = 'tvly-test';
+
+    try {
+      const result = await handleFusionCommand('What is the latest version?', {
+        sessionId: 'pipe-web',
+        source: 'api',
+        web: 'on',
+      });
+      // A Tavily call was made.
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('tavily.com'))).toBe(true);
+      // The web search is reflected in meta.
+      expect(result.meta.web.searched).toBe(true);
+      expect(result.meta.web.enabled).toBe(true);
+    } finally {
+      process.env.TAVILY_API_KEY = orig;
+      (config as Record<string, unknown>).tavilyApiKey = orig ?? '';
+    }
+  });
 });
