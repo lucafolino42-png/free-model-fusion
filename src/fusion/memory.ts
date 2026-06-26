@@ -74,7 +74,7 @@ export async function getSessionMessages(
     .select()
     .from(messages)
     .where(eq(messages.sessionId, sessionId))
-    .orderBy(desc(messages.createdAt))
+    .orderBy(desc(messages.createdAt), desc(messages.id))
     .limit(limit);
 
   // Reverse to chronological order
