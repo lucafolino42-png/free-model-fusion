@@ -30,9 +30,10 @@ export function applyProviderOverrides(
 
 // ─── Get All Providers ───────────────────────────────────
 export async function getAllProviders(): Promise<RegisteredProvider[]> {
-  const [dbCustomProviders, creds] = await Promise.all([
+  const [dbCustomProviders, creds, overrides] = await Promise.all([
     db.select().from(customProviders),
     db.select().from(credentials),
+    db.select().from(providerOverrides),
   ]);
 
   const dbCreds = new Set(creds.map((c) => c.providerId));
@@ -67,7 +68,7 @@ export async function getAllProviders(): Promise<RegisteredProvider[]> {
     isPreset: false,
   }));
 
-  return [...builtIns, ...customs];
+  return applyProviderOverrides([...builtIns, ...customs], overrides);
 }
 
 // ─── Get Enabled Providers ───────────────────────────────
@@ -202,6 +203,9 @@ export async function setProviderEnabled(
   id: string,
   enabled: boolean
 ): Promise<boolean> {
+  const now = new Date();
+
+  // Custom provider: update its row directly.
   const custom = await db
     .select()
     .from(customProviders)
@@ -211,10 +215,26 @@ export async function setProviderEnabled(
   if (custom.length > 0) {
     await db
       .update(customProviders)
-      .set({ enabled, updatedAt: new Date() })
+      .set({ enabled, updatedAt: now })
       .where(eq(customProviders.id, id));
     return true;
   }
+
+  // Preset provider: upsert an override row (presets are immutable data).
+  const preset = providerPresets.find(
+    (p) => p.id === id || p.aliases.includes(id)
+  );
+  if (preset) {
+    await db
+      .insert(providerOverrides)
+      .values({ providerId: preset.id, enabled, updatedAt: now })
+      .onConflictDoUpdate({
+        target: providerOverrides.providerId,
+        set: { enabled, updatedAt: now },
+      });
+    return true;
+  }
+
   return false;
 }
 
