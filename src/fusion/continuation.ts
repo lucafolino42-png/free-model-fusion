@@ -61,6 +61,17 @@ export async function continueResponse(
       { maxTokens: config.continuationMaxTokens, temperature: 0.3 }
     );
 
+    // Don't append empty/whitespace continuation content — it would only add
+    // a stray blank line to the answer.
+    if (result.content.trim().length === 0) {
+      return {
+        fullContent: originalContent,
+        continued: false,
+        continuationContent: result.content,
+        finishReason: result.finishReason,
+      };
+    }
+
     return {
       fullContent: originalContent + '\n\n' + result.content,
       continued: true,
