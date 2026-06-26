@@ -299,8 +299,8 @@ export const modelPresets: ModelPreset[] = [
   {
     id: 'gemini_flash',
     providerId: 'gemini',
-    title: 'Gemini 2.0 Flash',
-    model: 'gemini-2.0-flash',
+    title: 'Gemini 2.5 Flash',
+    model: 'gemini-2.5-flash',
     useAs: ['expert', 'judge', 'synthesis'],
     enabled: true,
     speedClass: 'fast',
@@ -310,8 +310,8 @@ export const modelPresets: ModelPreset[] = [
   {
     id: 'gemini_pro',
     providerId: 'gemini',
-    title: 'Gemini 2.0 Pro',
-    model: 'gemini-2.0-pro',
+    title: 'Gemini 2.5 Pro',
+    model: 'gemini-2.5-pro',
     useAs: ['expert', 'judge', 'synthesis'],
     enabled: true,
     speedClass: 'medium',
@@ -321,14 +321,14 @@ export const modelPresets: ModelPreset[] = [
 
   // ── Cerebras ──
   {
-    id: 'cerebras_llama3_8b',
+    id: 'cerebras_gpt_oss_120b',
     providerId: 'cerebras',
-    title: 'Llama 3.1 8B',
-    model: 'llama3.1-8b',
-    useAs: ['expert'],
+    title: 'GPT-OSS 120B',
+    model: 'gpt-oss-120b',
+    useAs: ['expert', 'judge'],
     enabled: true,
     speedClass: 'very_fast',
-    qualityClass: 'basic',
+    qualityClass: 'strong',
     maxOutputTokens: 8192,
   },
 
@@ -373,8 +373,8 @@ export const modelPresets: ModelPreset[] = [
   {
     id: 'di_llama3_70b',
     providerId: 'deepinfra',
-    title: 'Llama 3 70B',
-    model: 'meta-llama/Meta-Llama-3-70B-Instruct',
+    title: 'Llama 3.3 70B Turbo',
+    model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
     useAs: ['expert', 'judge'],
     enabled: true,
     speedClass: 'fast',
@@ -386,8 +386,8 @@ export const modelPresets: ModelPreset[] = [
   {
     id: 'pplx_sonar',
     providerId: 'perplexity',
-    title: 'Sonar Small 32K',
-    model: 'sonar-small-chat',
+    title: 'Sonar',
+    model: 'sonar',
     useAs: ['expert'],
     enabled: true,
     speedClass: 'fast',
@@ -397,8 +397,8 @@ export const modelPresets: ModelPreset[] = [
   {
     id: 'pplx_sonar_large',
     providerId: 'perplexity',
-    title: 'Sonar Large 32K',
-    model: 'sonar-large-chat',
+    title: 'Sonar Pro',
+    model: 'sonar-pro',
     useAs: ['expert', 'judge', 'synthesis'],
     enabled: true,
     speedClass: 'medium',
