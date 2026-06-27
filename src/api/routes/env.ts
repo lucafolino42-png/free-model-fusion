@@ -112,6 +112,13 @@ export function registerEnvRoutes(fastify: FastifyInstance): void {
         }
       }
 
+      // Telegram: the polling loop reads this on every iteration (see
+      // src/telegram/bot.ts), but we also propagate to config for callers
+      // that read config.telegramBotToken directly (e.g. setTelegramWebhook).
+      if (key === 'TELEGRAM_BOT_TOKEN') {
+        (config as Record<string, unknown>).telegramBotToken = value;
+      }
+
       logger.info(`Environment variable updated via API: ${key}`);
       return { success: true, key, maskedValue: maskValue(key, value) };
     } catch (error) {

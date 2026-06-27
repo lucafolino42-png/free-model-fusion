@@ -3,6 +3,9 @@ import { logger } from '../utils/logger.js';
 import { setTelegramWebhook, deleteTelegramWebhook } from './send.js';
 import type { FastifyInstance } from 'fastify';
 
+// ─── Track last-registered webhook (for idempotent re-init) ─
+let lastRegisteredWebhook: { url: string; token: string } | null = null;
+
 // ─── Initialize Telegram Bot ─────────────────────────────
 export async function initTelegramBot(
   fastify: FastifyInstance
@@ -21,15 +24,26 @@ export async function initTelegramBot(
     return handleTelegramWebhook(request, reply);
   });
 
-  // Set webhook if URL is configured
+  // Set webhook if URL is configured. Skip if same (token, url) was already
+  // registered — avoids unnecessary Telegram API calls + log spam on restart.
   if (config.telegramWebhookUrl) {
     const webhookUrl = `${config.telegramWebhookUrl.replace(/\/$/, '')}/telegram/webhook`;
-    const success = await setTelegramWebhook(webhookUrl);
-    if (success) {
-      logger.info(`Telegram bot webhook set to: ${webhookUrl}`);
+    const alreadyRegistered =
+      lastRegisteredWebhook &&
+      lastRegisteredWebhook.url === webhookUrl &&
+      lastRegisteredWebhook.token === config.telegramBotToken;
+
+    if (alreadyRegistered) {
+      logger.debug(`Telegram webhook already registered: ${webhookUrl}`);
     } else {
-      logger.warn('Failed to set Telegram webhook, falling back to polling');
-      await startPolling();
+      const success = await setTelegramWebhook(webhookUrl);
+      if (success) {
+        lastRegisteredWebhook = { url: webhookUrl, token: config.telegramBotToken };
+        logger.info(`Telegram bot webhook set to: ${webhookUrl}`);
+      } else {
+        logger.warn('Failed to set Telegram webhook, falling back to polling');
+        await startPolling();
+      }
     }
   } else {
     logger.info(
@@ -64,13 +78,30 @@ async function startPollingLoop(): Promise<void> {
 
   while (true) {
     try {
+      // Read the token LIVE on every iteration so updates via /api/env take
+      // effect within one poll cycle (~2s), with no server restart. Also
+      // gracefully no-op if the token was just cleared.
+      const token = config.telegramBotToken;
+      if (!token) {
+        await sleep(pollInterval);
+        continue;
+      }
+
       const response = await fetch(
-        `https://api.telegram.org/bot${config.telegramBotToken}/getUpdates?offset=${lastUpdateId + 1}&timeout=30&allowed_updates=["message"]`,
+        `https://api.telegram.org/bot${token}/getUpdates?offset=${lastUpdateId + 1}&timeout=30&allowed_updates=["message"]`,
         { method: 'GET' }
       );
 
       if (!response.ok) {
-        await sleep(pollInterval);
+        // 401/403 from Telegram means our token is bad or revoked — wait
+        // longer than usual to avoid hammering the API while the operator
+        // fixes the token.
+        if (response.status === 401 || response.status === 403) {
+          logger.warn(`Telegram polling got ${response.status}; check TELEGRAM_BOT_TOKEN.`);
+          await sleep(15000);
+        } else {
+          await sleep(pollInterval);
+        }
         continue;
       }
 
