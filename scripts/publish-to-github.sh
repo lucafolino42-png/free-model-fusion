@@ -12,11 +12,12 @@
 
 set -euo pipefail
 
-REPO_SLUG="${1:?Usage: $0 <github-username>}"
+REPO_SLUG="${1:?Usage: publish-to-github.sh <github-username>}"
 REPO_NAME="free-model-fusion"
 PUBLIC_DESC="Self-hosted AI router: every chat message is sent to multiple models in parallel, judged, and synthesized."
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."
 
 echo "==> Step 1/5: verifying gh auth"
 gh auth status

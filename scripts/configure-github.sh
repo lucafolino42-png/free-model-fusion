@@ -7,8 +7,9 @@
 
 set -euo pipefail
 
-USERNAME="${1:?Usage: $0 <github-username>}"
-cd "$(dirname "$0")/.."
+USERNAME="${1:?Usage: configure-github.sh <github-username>}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."
 
 # Stamp the repo URL into package.json via python (cross-platform safe).
 python - <<PY
