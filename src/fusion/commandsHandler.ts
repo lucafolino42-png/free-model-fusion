@@ -153,11 +153,26 @@ async function handleChatMessage(
   // Per-request web override takes precedence over the session's persisted mode.
   const webMode = (webOverride ?? session.webMode) as 'on' | 'off' | 'auto';
 
+  // Load history BEFORE saving the current message, so `history` contains only
+  // prior turns. The current message is then appended once (as the final user
+  // turn) by runExpertPanel/runSynthesis. Saving first would duplicate the
+  // current message in the history AND as the final user message.
+  const history = await getSessionMessages(sessionId);
+
   // Save user message
   await saveMessage(sessionId, 'user', message);
 
-  // Load history
-  const history = await getSessionMessages(sessionId);
+  // When there is prior conversation history, build a context-aware prompt
+  // for the models: the final user message references the prior turn so cheap
+  // models attend to it instead of treating the question as standalone. The
+  // original `message` is unchanged in the DB; only the in-call prompt is
+  // augmented. The most recent prior user message (if any) is quoted as a
+  // short reminder.
+  const priorUserTurns = history.filter((m) => m.role === 'user');
+  const effectiveMessage =
+    priorUserTurns.length > 0
+      ? `In our prior conversation, the user previously asked: "${priorUserTurns[priorUserTurns.length - 1].content}". Now they ask: ${message}`
+      : message;
 
   // Determine web search
   let webContext = '';
@@ -188,7 +203,7 @@ async function handleChatMessage(
   );
 
   // Run expert panel
-  const expertResult = await runExpertPanel(routing.experts, message, history);
+  const expertResult = await runExpertPanel(routing.experts, effectiveMessage, history);
 
   const responseErrors: Array<{ provider: string; model: string; error: string }> =
     expertResult.errors.map((e) => ({
@@ -230,14 +245,14 @@ async function handleChatMessage(
   let judgeResult = { evaluation: '', modelUsed: '', success: false };
   let judgeUsed = false;
   if (routing.judge) {
-    judgeResult = await runJudge(routing.judge, message, expertResult.responses, webContext);
+    judgeResult = await runJudge(routing.judge, effectiveMessage, expertResult.responses, webContext);
     judgeUsed = true;
   }
 
   // Run synthesis
   let synthesisResult = await runSynthesis(
     routing.synthesis || routing.experts[0],
-    message,
+    effectiveMessage,
     expertResult.responses,
     judgeResult.evaluation || 'Using expert responses directly.',
     webContext,
