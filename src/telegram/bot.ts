@@ -6,6 +6,50 @@ import type { FastifyInstance } from 'fastify';
 // ─── Track last-registered webhook (for idempotent re-init) ─
 let lastRegisteredWebhook: { url: string; token: string } | null = null;
 
+// ─── Welcome message + per-chat rate limit (F10) ─────────
+// Per-chat last-message timestamp. Module-level so it persists across the
+// poll loop. Resets on process restart.
+const lastMessageByChat = new Map<number, number>();
+
+/** Returns true if the chat sent a message within `windowMs`. Pure. */
+export function isRateLimited(
+  chatId: number,
+  map: Map<number, number> = lastMessageByChat,
+  windowMs = 2000,
+  now: number = Date.now()
+): boolean {
+  const last = map.get(chatId);
+  if (last === undefined) {
+    map.set(chatId, now);
+    return false;
+  }
+  if (now - last < windowMs) return true;
+  map.set(chatId, now);
+  return false;
+}
+
+/** Welcome message sent in response to /start. */
+export function telegramStartMessage(): string {
+  return [
+    '👋 Welcome to Free Model Fusion!',
+    '',
+    'Send any message and I will route it through multiple AI models in parallel, ' +
+      'judge the answers, and synthesize the best result. Your chat history is remembered.',
+    '',
+    'Useful commands:',
+    '• /help — full command list',
+    '• /profile speed|balanced|quality|custom — choose how to route',
+    '• /add <model> — pick which models participate (requires profile: custom)',
+    '• /remove <model> — drop a model from the custom set',
+    '• /models — list available models',
+    '• /providers — list available providers',
+    '• /listkeys — show configured API keys',
+    '• /stats — session memory stats',
+    '',
+    'To use paid providers, add API keys in the web dashboard (Secrets page).',
+  ].join('\n');
+}
+
 // ─── Initialize Telegram Bot ─────────────────────────────
 export async function initTelegramBot(
   fastify: FastifyInstance
@@ -131,6 +175,28 @@ async function startPollingLoop(): Promise<void> {
 
           try {
             const { sendTelegramMessage, sendChatAction } = await import('./send.js');
+
+            // /start: send the welcome message, skip fusion. (Resets the
+            // rate-limit timestamp so the first real message isn't blocked.)
+            if (text.trim() === '/start') {
+              await sendTelegramMessage(chatId, telegramStartMessage(), {
+                replyToMessageId: message.message_id,
+              });
+              lastMessageByChat.set(chatId, Date.now());
+              continue;
+            }
+
+            // Rate-limit: max 1 message / 2s per chat (F10).
+            if (isRateLimited(chatId)) {
+              logger.debug(`Telegram rate-limit hit for chat ${chatId}`);
+              await sendTelegramMessage(
+                chatId,
+                '⏱ Slow down — please wait a moment before sending another message.',
+                { replyToMessageId: message.message_id }
+              );
+              continue;
+            }
+
             await sendChatAction(chatId);
 
             const result = await handleFusionCommand(text, {

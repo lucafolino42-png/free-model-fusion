@@ -2,6 +2,7 @@ import fs from 'fs';
 import { logger } from '../../utils/logger.js';
 import { config } from '../../config.js';
 import { maskValue, ENV_FILE } from './_shared.js';
+import { listCredentials } from '../../providers/credentials.js';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 
@@ -125,5 +126,24 @@ export function registerEnvRoutes(fastify: FastifyInstance): void {
       reply.status(500);
       return { error: `Failed to update ${key}: ${String(error)}` };
     }
+  });
+
+  // ─── /secrets (F4/F5 merge) ───────────────────────────────
+  // Single endpoint aggregating all secret storage so the UI can show it on
+  // one page: provider keys (DB-editable) as primary, env vars as advanced
+  // (read-only display, since changing them has different semantics — some
+  // require a server restart).
+  f.get('/secrets', async () => {
+    const providerKeys = await listCredentials();
+    const envVars: Array<{ key: string; maskedValue: string; source: string }> = [];
+    for (const key of ENV_KEYS) {
+      const val = process.env[key] || '';
+      envVars.push({
+        key,
+        maskedValue: val ? maskValue(key, val) : '',
+        source: val ? 'env' : 'unset',
+      });
+    }
+    return { providerKeys, envVars };
   });
 }
