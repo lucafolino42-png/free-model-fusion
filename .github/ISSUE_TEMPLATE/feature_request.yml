@@ -1,0 +1,45 @@
+name: ✨ Feature request
+description: Suggest a new capability.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us **what you want to do** first; the implementation can be discussed below.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Use case — what are you trying to do?
+      placeholder: |
+        I want to route specific keywords to specific providers...
+      value: ""
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: What works today / what you tried
+      value: ""
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed behavior
+      placeholder: |
+        Add a `keywordRoutes` field to the session: when a message contains
+        "code" route to Claude, when it contains "image" route to Gemini...
+      value: ""
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Backend (fusion engine, providers)
+        - Frontend (UI)
+        - Telegram bot
+        - Deploy / ops
+        - Docs
+  - type: textarea
+    id: alt
+    attributes:
+      label: Alternatives considered
+      value: ""

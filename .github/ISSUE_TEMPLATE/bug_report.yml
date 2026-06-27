@@ -1,0 +1,79 @@
+name: 🐛 Bug report
+description: Something broke — share what you did and what happened.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please fill out the sections below — the more detail you share, the faster we can reproduce and fix it.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where did the bug appear?
+      options:
+        - Dashboard UI (web)
+        - Chat / API
+        - Telegram bot
+        - Docker / deploy
+        - Tests / dev tooling
+        - Other
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `npm run dev`
+        2. Send `POST /chat` with body `{ "message": "..." }`
+        3. See error
+      value: ""
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      value: ""
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: |
+        The response was { "error": { "code": "...", "message": "..." } }
+        Server log line: ...
+      value: ""
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: e.g. v1.0.0 or commit hash
+      value: ""
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: e.g. 22.5.0
+      value: ""
+  - type: dropdown
+    id: providers
+    attributes:
+      label: Providers involved
+      multiple: true
+      options:
+        - Groq
+        - OpenRouter
+        - Gemini
+        - Cerebras
+        - Together
+        - Fireworks
+        - DeepInfra
+        - Custom (specify in repro)
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / stack traces
+      render: shell
+      value: ""
