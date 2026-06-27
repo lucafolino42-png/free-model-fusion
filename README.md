@@ -6,6 +6,26 @@ Free Model Fusion is a **self-hosted, open-source AI router** that combines mult
 
 Think of it as a **free OpenRouter-style model fusion engine** for people who collect free AI API keys from providers like Groq, OpenRouter, Gemini, Cerebras, NVIDIA NIM, Together, Fireworks, DeepInfra, and more.
 
+[![tests](https://img.shields.io/badge/tests-184%20passing-brightgreen)](docs/superpowers/specs/)
+[![typecheck](https://img.shields.io/badge/tsc--noEmit-clean-brightgreen)](docs/superpowers/specs/)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A522-blue)](package.json)
+[![ci](https://img.shields.io/badge/ci-model--freshness-blue)](.github/workflows/model-freshness.yml)
+
+**Full reference: open `/docs` after launching, or see [`public/docs.html`](public/docs.html).**
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
+
+## Contributing
+
+PRs welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, conventions, and where to help.
+
+## Security
+
+Auth/authz is intentionally absent — this is a self-hosted tool meant for trusted networks. Put it behind a reverse proxy (Caddy / nginx / Cloudflare Tunnel) if exposing it. Found a vulnerability? Open an issue with the `security` label.
+
 ## Why?
 
 If you're collecting free API keys from AI providers, you know the pain:
