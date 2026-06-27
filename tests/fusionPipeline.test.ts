@@ -275,6 +275,76 @@ describe('fusion pipeline (mocked fetch)', () => {
       b.messages.some((m: { content: string }) => m.content.includes('My name is Alice.'))
     );
     expect(anyCallHasHistory).toBe(true);
+
+    // The current turn-2 message must NOT be duplicated: it should appear
+    // (possibly wrapped in a history-aware preamble) as the final user message
+    // exactly once in the expert calls. Previously saveMessage ran before
+    // getSessionMessages, so the current message was both in history AND
+    // appended again. (Judge/synthesis calls get different prompts and are
+    // not part of this assertion.)
+    const expertCalls = turn2Bodies.filter((b) => {
+      if (!Array.isArray(b.messages)) return false;
+      const msgs = b.messages as Array<{ role: string; content: string }>;
+      // Expert calls include the system prompt that begins with "Answer this
+      // question directly and concisely"; judge/synthesis use different
+      // prompts. Identify experts by this distinctive opener.
+      const sys = msgs.find((m) => m.role === 'system');
+      return sys?.content.includes('Answer this question directly');
+    });
+    expect(expertCalls.length).toBeGreaterThan(0);
+    for (const b of expertCalls) {
+      const msgs = b.messages as Array<{ role: string; content: string }>;
+      const userTurns = msgs.filter((m) => m.role === 'user');
+      const containsCurrentQuestion = userTurns.some((m) =>
+        m.content.includes('What is my name?')
+      );
+      expect(containsCurrentQuestion).toBe(true);
+      // The bare current question must not appear verbatim twice (i.e. it
+      // is not duplicated in both history and the final user turn).
+      const bareCount = userTurns.filter((m) => m.content === 'What is my name?').length;
+      expect(bareCount).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('memory: vague follow-up includes a conversation-reference preamble in the model call', async () => {
+    // Real-model failure: with cheap models, a bare follow-up ("What is the
+    // population of the city I just asked about?") gets answered as if no
+    // history exists, even though history IS in the messages array. Fix: when
+    // there is prior history, the final user message sent to the model should
+    // include a short reference to the prior conversation, forcing the model
+    // to attend to history rather than treating the message as standalone.
+    const fetchMock = vi.fn(async (_url: string, init?: { body?: string }) => {
+      const body = JSON.parse(init?.body ?? '{}');
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          model: body.model,
+          choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        }),
+        text: async () => '',
+      } as unknown as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await handleFusionCommand('The city I mentioned is Paris.', { sessionId: 'pipe-preamble', source: 'api' });
+    fetchMock.mockClear();
+
+    await handleFusionCommand('What is the population of that city?', { sessionId: 'pipe-preamble', source: 'api' });
+
+    const turn2Bodies = fetchMock.mock.calls.map((c) => JSON.parse(String(c[1]?.body ?? '{}')));
+    const expertCalls = turn2Bodies.filter((b) => Array.isArray(b.messages));
+    expect(expertCalls.length).toBeGreaterThan(0);
+
+    // The final user message sent to the model must mention the prior turn
+    // (either by referencing the prior conversation or by quoting prior
+    // content) — proving the handler built a context-aware prompt.
+    const finalUserMessages = expertCalls
+      .map((b) => (b.messages as Array<{ role: string; content: string }>).filter((m) => m.role === 'user').slice(-1)[0]?.content ?? '');
+    const anyFinalMessageReferencesPriorTurn = finalUserMessages.some(
+      (m) => /prior|previous|earlier|conversation|Paris/i.test(m)
+    );
+    expect(anyFinalMessageReferencesPriorTurn).toBe(true);
   });
 
   it('web search: augments the prompt when webMode is on (mocked Tavily)', async () => {
