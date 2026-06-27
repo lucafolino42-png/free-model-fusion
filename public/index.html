@@ -237,7 +237,7 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
         <span class="icon" aria-hidden="true">⚙️</span> Settings
       </button>
       <button class="nav-item" data-view="env" onclick="switchView('env')">
-        <span class="icon" aria-hidden="true">🌐</span> Environment
+        <span class="icon" aria-hidden="true">🔐</span> Secrets
       </button>
       <button class="nav-item" data-view="memory" onclick="switchView('memory')">
         <span class="icon" aria-hidden="true">💾</span> Memory
@@ -263,6 +263,9 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
     <div class="content" id="content">
       <!-- ===== CHAT VIEW ===== -->
       <div class="view active" id="view-chat">
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:12px;padding:10px 14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:8px">
+          <strong>How Chat works:</strong> Every message you send is routed through multiple AI models in parallel (the <em>expert panel</em>), then a <em>judge</em> evaluates their answers and a <em>synthesis</em> model produces the final response. Use <code style="font-family:var(--font-mono)">/profile custom</code> after picking a custom model set in <strong>Settings → Custom Model Combinations</strong>. Use <code style="font-family:var(--font-mono)">/help</code> in chat to see all commands.
+        </div>
         <div class="chat-container">
           <div class="chat-toolbar">
             <input class="input" id="chatSessionId" placeholder="Session ID" value="default" style="max-width:140px">
@@ -293,7 +296,10 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
 
       <!-- ===== DASHBOARD VIEW ===== -->
       <div class="view" id="view-dashboard">
-        <h2 style="font-size:20px;font-weight:600;margin-bottom:16px">📊 Dashboard</h2>
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:8px">📊 Dashboard</h2>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:16px;padding:10px 14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:8px">
+          A quick health summary of your fusion instance. <strong>Health</strong> is the server's heartbeat. <strong>Providers</strong> counts both built-in presets and custom ones you've added. <strong>Models</strong> counts presets + custom models. <strong>API Keys</strong> shows how many providers have a key configured (env or DB). For deeper management, open <strong>Secrets</strong> in the sidebar.
+        </div>
         <div class="stats" id="dashStats">
           <div class="stat"><div class="stat-icon">🟢</div><div class="stat-value" id="dashHealth">-</div><div class="stat-label">Health</div></div>
           <div class="stat"><div class="stat-icon">🏢</div><div class="stat-value" id="dashProviders">-</div><div class="stat-label">Providers</div></div>
@@ -310,6 +316,9 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
 
       <!-- ===== PROVIDERS VIEW ===== -->
       <div class="view" id="view-providers">
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:12px;padding:10px 14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:8px">
+          <strong>Providers</strong> are the AI services that host models (Groq, OpenRouter, Gemini, etc.). Built-in <em>presets</em> work as soon as you add a matching API key in <strong>Secrets</strong>. <strong>Add Provider</strong> adds a custom OpenAI-compatible endpoint (e.g. your own self-hosted model). Toggle a provider on/off to control which models are eligible for routing.
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
           <h2 style="font-size:20px;font-weight:600">🏢 Providers</h2>
           <button class="btn btn-primary btn-sm" onclick="openAddProviderModal()">+ Add Provider</button>
@@ -323,6 +332,9 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
 
       <!-- ===== MODELS VIEW ===== -->
       <div class="view" id="view-models">
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:12px;padding:10px 14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:8px">
+          <strong>Models</strong> are the individual AI configurations the fusion engine can call. Built-in presets come from the active provider list; <strong>Add Model</strong> registers a custom one (useful for self-hosted endpoints or new models a preset provider releases). After adding, build a custom model set in <strong>Settings → Custom Model Combinations</strong>.
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
           <h2 style="font-size:20px;font-weight:600">🤖 Models</h2>
           <button class="btn btn-primary btn-sm" onclick="openAddModelModal()">+ Add Model</button>
@@ -383,11 +395,14 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
             </div>
             <div class="form-group">
               <label>Web Search Mode</label>
-              <select class="input" id="setWebMode">
-                <option value="off">Off</option>
-                <option value="auto">Auto</option>
-                <option value="on">On</option>
+              <select class="input" id="setWebMode" title="When the fusion pipeline searches the web for fresh information before answering.">
+                <option value="off">Off — never search the web</option>
+                <option value="auto">Auto — search when needed</option>
+                <option value="on">On — always search first</option>
               </select>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5">
+                <strong>off</strong>: never search; <strong>auto</strong>: search when the user asks about current events, recent releases, or anything that benefits from fresh info; <strong>on</strong>: always run a web search before answering (uses the configured TAVILY_API_KEY). You can override per-request via <code style="font-family:var(--font-mono)">{"web":"on"}</code> in the API body.
+              </div>
             </div>
           </div>
           <div class="form-actions"><button class="btn btn-primary" onclick="saveSettings()">Save Settings</button></div>
@@ -399,41 +414,89 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
             <div class="form-group"><label>Judge Max Tokens</label><input class="input" type="number" id="setJudgeTokens" min="100" max="32000"></div>
             <div class="form-group"><label>Synthesis Max Tokens</label><input class="input" type="number" id="setSynthTokens" min="100" max="64000"></div>
           </div>
+          <div class="card-subtitle">Changes apply to the next chat request — no server restart.</div>
           <div class="form-actions"><button class="btn btn-primary" onclick="saveTokens()">Save Tokens</button></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Custom Model Combinations</div>
+          <div class="card-subtitle">Pick exactly which models participate in the expert panel for this session. Saving switches the routing profile to <strong>Custom</strong>. Empty selection reverts to your chosen Default Profile above.</div>
+          <div class="form-row">
+            <div class="form-group" style="max-width:260px">
+              <label>Session ID</label>
+              <input class="input" id="customSessId" placeholder="e.g. my-work-session">
+            </div>
+          </div>
+          <div id="customModelsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin:8px 0 12px;max-height:320px;overflow:auto"></div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="savePreferredExperts()">Save Custom Set</button>
+            <button class="btn btn-secondary" onclick="loadPreferredExperts()">Load</button>
+            <button class="btn btn-secondary" onclick="clearPreferredExperts()">Clear</button>
+          </div>
         </div>
       </div>
 
-      <!-- ===== ENVIRONMENT VIEW ===== -->
+      <!-- ===== SECRETS VIEW (F4/F5 merge of /keys + /env) ===== -->
       <div class="view" id="view-env">
-        <h2 style="font-size:20px;font-weight:600;margin-bottom:16px">🌐 Environment Variables</h2>
-        <div class="card">
-          <div class="card-title">Variables</div>
-          <div class="card-subtitle">Edit environment variables below. Changes are written to <code style="font-family:var(--font-mono);font-size:12px">.env</code> and applied immediately. Secret values are masked.</div>
-          <div class="env-grid" id="envGrid"></div>
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:8px">🔐 Secrets</h2>
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-size:13px;line-height:1.6;color:var(--text-secondary)">
+            <strong>How this works:</strong> Provider API keys live in the encrypted database (primary, editable, applied live). Environment variables are loaded from <code style="font-family:var(--font-mono);font-size:12px">.env</code> at startup and used as defaults. If both exist for the same provider, the env var wins — set one OR the other, not both, to avoid confusion.
+          </div>
         </div>
+
+        <!-- Provider API keys (primary, editable) -->
         <div class="card">
-          <div class="card-title">Add / Override Variable</div>
-          <div class="form-row">
-            <div class="form-group" style="max-width:250px">
-              <label>Key</label>
-              <input class="input" id="envNewKey" placeholder="e.g. GROQ_API_KEY" list="envKeyList">
-              <datalist id="envKeyList"></datalist>
-            </div>
-            <div class="form-group">
-              <label>Value</label>
-              <input class="input" id="envNewValue" placeholder="API key or value" type="password">
-            </div>
+          <div class="card-title">Provider API Keys</div>
+          <div class="card-subtitle">Add or remove API keys for any provider. These are encrypted in the database and applied to the next chat request.</div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+            <button class="btn btn-primary btn-sm" onclick="openAddKeyModal()">+ Add Key</button>
           </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="setEnvVar()">Set Variable</button>
-            <button class="btn btn-secondary" onclick="refreshEnvVars()">Refresh</button>
-          </div>
+          <div class="table-wrap"><table><thead><tr>
+            <th>Provider</th><th>Key (masked)</th><th>Source</th><th>Actions</th>
+          </tr></thead><tbody id="keysTable"><tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody></table></div>
+        </div>
+
+        <!-- Advanced: env vars (read-only display + override form) -->
+        <div class="card" style="margin-top:12px">
+          <details>
+            <summary style="cursor:pointer;font-weight:600;font-size:15px">⚙️ Advanced: Environment Variables (read-only display)</summary>
+            <div style="font-size:12px;line-height:1.6;color:var(--text-muted);margin:8px 0 12px;padding:8px;background:rgba(255,200,100,.05);border-left:3px solid #facc15;border-radius:4px">
+              <strong>Tip:</strong> Most users should manage keys in the table above. Edit env vars only when deploying with <code>.env</code> file pre-population. Changes here write to <code>.env</code> and to live config (no restart needed for new keys to apply, but some settings may still require one).
+            </div>
+            <div class="env-grid" id="envGrid"></div>
+            <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:16px">
+              <div class="card-subtitle" style="margin-bottom:8px"><strong>Add or override an env variable</strong></div>
+              <div class="form-row">
+                <div class="form-group" style="max-width:250px">
+                  <label>Key</label>
+                  <input class="input" id="envNewKey" placeholder="e.g. GROQ_API_KEY" list="envKeyList">
+                  <datalist id="envKeyList"></datalist>
+                </div>
+                <div class="form-group">
+                  <label>Value</label>
+                  <input class="input" id="envNewValue" placeholder="API key or value" type="password">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" onclick="setEnvVar()">Set Variable</button>
+                <button class="btn btn-secondary" onclick="refreshEnvVars()">Refresh</button>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
 
       <!-- ===== MEMORY VIEW ===== -->
       <div class="view" id="view-memory">
-        <h2 style="font-size:20px;font-weight:600;margin-bottom:16px">💾 Session Memory</h2>
+        <h2 style="font-size:20px;font-weight:600;margin-bottom:8px">💾 Session Memory</h2>
+        <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:16px;padding:10px 14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:8px">
+          <strong>What this is:</strong> Per-session conversation history. The Chat API takes a <code style="font-family:var(--font-mono)">sessionId</code>; messages you send on the same id are remembered and fed back to the models as prior turns. Sessions also persist your chosen routing profile, web-search mode, and custom model set.
+          <br><br>
+          <strong>Session ID conventions:</strong> The dashboard defaults to <code style="font-family:var(--font-mono)">default</code>. Telegram chats use <code style="font-family:var(--font-mono)">telegram:&lt;chat-id&gt;</code>. Webhooks use whatever you pass in the body. Pick a unique id per context (e.g. <code style="font-family:var(--font-mono)">work-research</code>, <code style="font-family:var(--font-mono)">client-acme</code>) to keep streams separate.
+          <br><br>
+          <strong>Clearing memory</strong> deletes only messages; the session row, profile, and preferredExperts are kept so reloading shows the same profile again.
+        </div>
         <div class="card">
           <div class="form-row">
             <div class="form-group" style="max-width:300px">
@@ -482,11 +545,16 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
     <h3>🤖 Add Custom Model</h3>
     <div class="form-group"><label>Model Key (unique ID)</label><input class="input" id="modalModelKey" placeholder="my-model"></div>
     <div style="height:8px"></div>
-    <div class="form-group"><label>Provider ID</label><input class="input" id="modalModelProv" placeholder="groq"></div>
+    <div class="form-group">
+      <label>Provider</label>
+      <select class="input" id="modalModelProv"><option value="">Loading providers…</option></select>
+    </div>
     <div style="height:8px"></div>
     <div class="form-group"><label>Title</label><input class="input" id="modalModelTitle" placeholder="My Custom Model"></div>
     <div style="height:8px"></div>
-    <div class="form-group"><label>Model ID (provider's model name)</label><input class="input" id="modalModelId" placeholder="llama-3.3-70b"></div>
+    <div class="form-group"><label>Model ID (the provider's exact model name)</label><input class="input" id="modalModelId" placeholder="e.g. llama-3.3-70b-versatile">
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Use the model's exact API id as documented by your provider.</div>
+    </div>
     <div style="height:8px"></div>
     <div class="form-row">
       <div class="form-group"><label>Use As</label><select class="input" id="modalModelUseAs" multiple style="height:80px"><option value="expert" selected>Expert</option><option value="judge">Judge</option><option value="synthesis">Synthesis</option></select></div>
@@ -751,7 +819,18 @@ async function deleteModel(key){
   }catch(e){showToast('Error: '+e.message,'error')}
 }
 
-function openAddModelModal(){$('modalModelKey').value='';$('modalModelProv').value='';$('modalModelTitle').value='';$('modalModelId').value='';$('modalModelSpeed').value='medium';$('modalModelQual').value='good';openModal('addModelModal')}
+function openAddModelModal(){
+  $('modalModelKey').value='';$('modalModelTitle').value='';$('modalModelId').value='';$('modalModelSpeed').value='medium';$('modalModelQual').value='good';
+  // Populate provider dropdown from /providers (presets + custom).
+  const sel=$('modalModelProv');
+  sel.innerHTML='<option value="">Loading…</option>';
+  api('/providers').then(r=>r.json()).then(d=>{
+    const providers=(d.providers||[]).filter(p=>p.enabled!==false);
+    if(!providers.length){sel.innerHTML='<option value="">No providers available — add a key first</option>';return}
+    sel.innerHTML=providers.map(p=>'<option value="'+escapeAttr(p.id)+'">'+esc(p.label||p.id)+'</option>').join('');
+  }).catch(()=>{sel.innerHTML='<option value="">Error loading providers</option>'});
+  openModal('addModelModal');
+}
 
 // ── API Keys ───────────────────────────────────────────
 async function refreshKeys(){
@@ -808,6 +887,64 @@ async function refreshSettings(){
     $('setJudgeTokens').value=s.judgeMaxTokens||1800;
     $('setSynthTokens').value=s.synthesisMaxTokens||5000;
   }catch(e){}
+  // Populate the custom-profile model checkbox list (independent of settings load).
+  await renderCustomModelsList();
+}
+
+async function renderCustomModelsList(){
+  const box=$('customModelsList');if(!box)return;
+  try{
+    const [mr,pr]=await Promise.all([api('/models'),api('/providers')]);
+    const models=(await mr.json()).models||[];
+    const providers=(await pr.json()).providers||[];
+    if(!models.length){box.innerHTML='<div style="color:var(--text-muted);font-size:13px">No models available. Add keys first.</div>';return}
+    box.innerHTML=models.map(m=>{
+      const prov=providers.find(p=>p.id===m.providerId);
+      const provLabel=prov?prov.label:m.providerId;
+      const checked=m._selected?' checked':'';
+      return '<label style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;font-size:13px">'
+        +'<input type="checkbox" data-model-id="'+escapeAttr(m.id)+'" style="margin-top:3px"'+checked+'>'
+        +'<span style="flex:1;min-width:0"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(m.title||m.id)+'</div>'
+        +'<div style="color:var(--text-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(provLabel)+' · '+esc(m.speedClass||'')+' · '+esc(m.qualityClass||'')+'</div></span>'
+        +'</label>';
+    }).join('');
+  }catch(e){box.innerHTML='<div style="color:var(--red);font-size:13px">Error loading models.</div>'}
+}
+
+async function savePreferredExperts(){
+  const sid=($('customSessId').value||'').trim();
+  if(!sid){showToast('Enter a Session ID first.','error');return}
+  const ids=Array.from(document.querySelectorAll('#customModelsList input[type=checkbox]:checked')).map(cb=>cb.getAttribute('data-model-id')).filter(Boolean);
+  try{
+    const r=await api('/session/'+encodeURIComponent(sid)+'/preferredExperts',{method:'PUT',body:JSON.stringify({preferredExperts:ids})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Failed to save','error');return}
+    showToast(ids.length?('Saved '+ids.length+' model'+(ids.length===1?'':'s')+' for session '+sid):'Cleared custom set');
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function loadPreferredExperts(){
+  const sid=($('customSessId').value||'').trim();
+  if(!sid){showToast('Enter a Session ID first.','error');return}
+  try{
+    const r=await api('/session/'+encodeURIComponent(sid)+'/preferredExperts');
+    const d=await r.json();
+    const ids=new Set(d.preferredExperts||[]);
+    document.querySelectorAll('#customModelsList input[type=checkbox]').forEach(cb=>cb.checked=ids.has(cb.getAttribute('data-model-id')));
+    showToast('Loaded '+ids.size+' model'+(ids.size===1?'':'s')+' for '+sid);
+  }catch(e){showToast('Error: '+e.message,'error')}
+}
+
+async function clearPreferredExperts(){
+  const sid=($('customSessId').value||'').trim();
+  if(!sid){showToast('Enter a Session ID first.','error');return}
+  try{
+    const r=await api('/session/'+encodeURIComponent(sid)+'/preferredExperts',{method:'PUT',body:JSON.stringify({preferredExperts:[]})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Failed','error');return}
+    document.querySelectorAll('#customModelsList input[type=checkbox]').forEach(cb=>cb.checked=false);
+    showToast('Custom set cleared for '+sid);
+  }catch(e){showToast('Error: '+e.message,'error')}
 }
 
 async function saveSettings(){
@@ -867,6 +1004,8 @@ async function refreshEnvVars(){
         '</span></div>'
     }).join('');
   }catch(e){$('envGrid').innerHTML='<div style="color:var(--red)">Error loading env vars.</div>'}
+  // Secrets view also shows provider keys — refresh both at once.
+  await refreshKeys();
 }
 
 function openEnvEdit(key){
