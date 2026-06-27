@@ -21,9 +21,13 @@ export async function createServer() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   });
 
-  // Rate limiting: 100 requests per minute per IP by default
+  // Rate limiting: configurable via FUSION_RATE_LIMIT_MAX env var.
+  // Default 1000/min is well above any realistic single-operator workload but
+  // keeps the safeguard active. Production deployments behind a reverse proxy
+  // can set this lower (e.g. 100). The /chat and /webhook/chat routes have
+  // their own stricter per-route 20/min limits (see api/routes/chat.ts).
   await fastify.register(rateLimit, {
-    max: 100,
+    max: Number(process.env.FUSION_RATE_LIMIT_MAX) || 1000,
     timeWindow: '1 minute',
     errorResponseBuilder: (request, context) => {
       return {
