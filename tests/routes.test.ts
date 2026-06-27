@@ -108,4 +108,19 @@ describe('HTTP routes (in-process inject)', () => {
     const res = await app.inject({ method: 'GET', url: '/js/..%2Findex.html' });
     expect(res.statusCode).toBe(404);
   });
+
+  it('GET /docs -> 200 with HTML (the in-website documentation page)', async () => {
+    const res = await app.inject({ method: 'GET', url: '/docs' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.body).toContain('Free Model Fusion');
+    // Spot-check that all major sections are present.
+    for (const header of [
+      'Quickstart', 'Chat API', 'Provider API', 'Model API', 'Secrets',
+      'Custom OpenAI-compatible providers', 'Fusion pipeline in depth',
+      'Telegram bot', 'Security', 'Troubleshooting', 'Deploy',
+    ]) {
+      expect(res.body).toContain(header);
+    }
+  });
 });

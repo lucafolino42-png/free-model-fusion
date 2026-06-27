@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Free Model Fusion — Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0a0f;--bg-2:#101018;--card:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);
+      --text:#e5e7eb;--text-muted:#9ca3af;--text-2:#6b7280;
+      --accent:#818cf8;--accent-2:#22d3ee;--green:#4ade80;--red:#f87171;--yellow:#facc15;
+      --font-sans:'Inter',system-ui,sans-serif;--font-mono:'JetBrains Mono',ui-monospace,monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:920px;margin:0 auto;padding:48px 24px 96px}
+    h1{font-size:36px;font-weight:700;margin:0 0 12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    h2{font-size:24px;font-weight:600;margin:48px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+    h3{font-size:18px;font-weight:600;margin:28px 0 10px}
+    p{margin:8px 0}
+    .lede{font-size:17px;color:var(--text-muted);margin-bottom:24px}
+    .meta{font-size:13px;color:var(--text-2);margin-bottom:32px}
+    .toc{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin:24px 0;font-size:14px}
+    .toc h3{margin:0 0 10px;font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+    .toc ol{margin:6px 0 0 18px;padding:0}
+    .toc li{margin:3px 0}
+    .toc a{color:var(--accent);text-decoration:none}
+    .toc a:hover{text-decoration:underline}
+    code{font-family:var(--font-mono);font-size:13px;background:rgba(255,255,255,.06);padding:1px 6px;border-radius:4px}
+    pre{background:#0d0d14;border:1px solid var(--border);border-radius:10px;padding:14px 16px;overflow:auto;font-family:var(--font-mono);font-size:13px;line-height:1.5;margin:12px 0}
+    pre code{background:transparent;padding:0}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:14px 0}
+    .card h3{margin-top:0}
+    table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+    th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+    th{color:var(--text-muted);font-weight:600;background:rgba(255,255,255,.02)}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(99,102,241,.15);color:#a5b4fc}
+    .tag-green{background:rgba(34,197,94,.15);color:#86efac}
+    .tag-yellow{background:rgba(250,204,21,.15);color:#fde68a}
+    .tag-red{background:rgba(239,68,68,.15);color:#fca5a5}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+    .topbar a{color:var(--accent);text-decoration:none;font-size:14px}
+    .topbar a:hover{text-decoration:underline}
+    .row{display:flex;gap:24px;flex-wrap:wrap}
+    .col{flex:1;min-width:280px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:6px;font-family:var(--font-mono);font-size:12px;background:rgba(99,102,241,.18);color:#c7d2fe}
+    .kbd{display:inline-block;padding:1px 6px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;font-family:var(--font-mono);font-size:12px;background:var(--bg-2)}
+    footer{border-top:1px solid var(--border);margin-top:64px;padding-top:24px;color:var(--text-2);font-size:13px;text-align:center}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a href="/">← Back to dashboard</a>
+    <span class="meta">Free Model Fusion · v1.0.0</span>
+  </div>
+
+  <h1>Free Model Fusion</h1>
+  <p class="lede">A self-hosted AI router: every chat message is sent to multiple models in parallel, judged, and synthesized. This page is the full reference — API, fusion internals, custom providers, Telegram, troubleshooting.</p>
+
+  <nav class="toc" aria-label="Table of contents">
+    <h3>On this page</h3>
+    <ol>
+      <li><a href="#quickstart">Quickstart</a></li>
+      <li><a href="#concepts">Concepts</a></li>
+      <li><a href="#chat-api">Chat API</a></li>
+      <li><a href="#providers-api">Provider API</a></li>
+      <li><a href="#models-api">Model API</a></li>
+      <li><a href="#secrets-api">Secrets (API keys) API</a></li>
+      <li><a href="#session-api">Session &amp; Memory API</a></li>
+      <li><a href="#custom-providers">Custom OpenAI-compatible providers</a></li>
+      <li><a href="#custom-models">Custom models</a></li>
+      <li><a href="#fusion-deep-dive">Fusion pipeline in depth</a></li>
+      <li><a href="#web-search">Web search</a></li>
+      <li><a href="#telegram">Telegram bot</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+      <li><a href="#deploy">Deploy</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="quickstart">Quickstart</h2>
+  <p>Three steps and you're running.</p>
+  <h3>1. Install</h3>
+  <pre><code>npm install</code></pre>
+
+  <h3>2. Configure</h3>
+  <pre><code>cp .env.example .env
+# Generate a secret key (required in production):
+echo "FUSION_SECRET_KEY=$(openssl rand -hex 32)" >> .env
+# Add at least one provider API key:
+echo "GROQ_API_KEY=gsk_your_key_here" >> .env</code></pre>
+
+  <h3>3. Run</h3>
+  <pre><code>npm run dev   # development with hot reload
+# or
+npm run build &amp;&amp; npm start   # production</code></pre>
+
+  <p>Open <code>http://localhost:3000</code>, go to <strong>Secrets</strong>, and add your first API key. Then type in <strong>Chat</strong>.</p>
+
+  <h2 id="concepts">Concepts</h2>
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <h3>Provider</h3>
+        <p>An AI service that hosts models (Groq, OpenRouter, Gemini, etc.). Providers expose an OpenAI-compatible HTTP API. A provider needs at least one valid API key to be usable.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>Model</h3>
+        <p>A specific AI configuration under a provider (e.g. <code>llama-3.3-70b-versatile</code> on Groq). Each model has roles: <span class="tag">expert</span> <span class="tag">judge</span> <span class="tag">synthesis</span>.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>Profile</h3>
+        <p>How to pick the expert panel: <strong>speed</strong> (fastest), <strong>balanced</strong> (default), <strong>quality</strong> (best), <strong>custom</strong> (your pick).</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>Session</h3>
+        <p>A conversation thread identified by <code>sessionId</code>. Stores message history, profile, web-search mode, and your custom model set.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="chat-api">Chat API</h2>
+  <p>Send a message, get back a routed + synthesized response.</p>
+  <h3>Request</h3>
+  <pre><code>POST /chat
+Content-Type: application/json
+
+{
+  "message": "What is the capital of France?",
+  "sessionId": "default",
+  "profile": "balanced",        // optional: "speed" | "balanced" | "quality" | "custom"
+  "web": "auto",                // optional: "on" | "off" | "auto"
+  "source": "api"               // optional: "api" | "webhook" — for memory attribution
+}</code></pre>
+
+  <h3>Response</h3>
+  <pre><code>{
+  "answer": "The capital of France is Paris.",
+  "telegramHtml": "&lt;b&gt;The capital of France is Paris.&lt;/b&gt;",
+  "meta": {
+    "routing":  { "profile": "balanced", "expertsUsed": 2, "judgeUsed": true,  "synthesisUsed": true,  "continued": false, "truncated": false },
+    "models":   { "experts": ["groq_llama3_8b", "groq_llama3_70b"], "judge": "groq_llama3_70b", "synthesis": "groq_llama3_70b" },
+    "memory":   { "sessionId": "default", "messagesLoaded": 4 },
+    "web":      { "enabled": false, "searched": false, "resultsCount": 0 },
+    "errors":   []
+  }
+}</code></pre>
+
+  <h3>Error responses</h3>
+  <table>
+    <tr><th>Status</th><th>When</th><th>Body</th></tr>
+    <tr><td>200</td><td>Always (success, partial, or no-models)</td><td><code>{ answer, meta }</code></td></tr>
+    <tr><td>400</td><td>Validation failed</td><td><code>{ error: { code: "VALIDATION_ERROR", message } }</code></td></tr>
+    <tr><td>500</td><td>Unexpected server error</td><td><code>{ error: { code: "INTERNAL_ERROR", message } }</code></td></tr>
+  </table>
+
+  <h3>In-chat commands (also work via <code>/webhook/chat</code>)</h3>
+  <table>
+    <tr><th>Command</th><th>Effect</th></tr>
+    <tr><td><code>/help</code></td><td>List all chat commands</td></tr>
+    <tr><td><code>/models</code></td><td>List available models</td></tr>
+    <tr><td><code>/providers</code></td><td>List providers + their enabled state</td></tr>
+    <tr><td><code>/profile &lt;speed|balanced|quality|custom&gt;</code></td><td>Change the routing profile for this session</td></tr>
+    <tr><td><code>/add &lt;model-key&gt;</code></td><td>Add a model to your custom set (requires profile: custom)</td></tr>
+    <tr><td><code>/remove &lt;model-key&gt;</code></td><td>Remove a model from your custom set</td></tr>
+    <tr><td><code>/listkeys</code></td><td>List configured API keys (masked)</td></tr>
+    <tr><td><code>/stats</code></td><td>Show session memory stats</td></tr>
+  </table>
+
+  <h2 id="providers-api">Provider API</h2>
+  <p>Providers are auto-merged from built-in presets + your custom additions.</p>
+  <pre><code>GET /providers                          → 200: { providers: [...] }
+GET /providers/:id                      → 200: { provider } | 404: { error }
+POST /providers   { id, label, endpoint, maxOutputTokens, speedClass, qualityClass }
+PATCH /providers/:id/toggle  { enabled }  → toggles preset OR custom
+DELETE /providers/:id                   → custom only (presets are immutable)</code></pre>
+
+  <h2 id="models-api">Model API</h2>
+  <pre><code>GET /models                             → 200: { models: [...] }
+POST /models   { provider, key, title, model, useAs, maxOutputTokens, ... }
+DELETE /models/:key                      → custom only (presets are immutable)</code></pre>
+
+  <h2 id="secrets-api">Secrets (API keys) API</h2>
+  <p>DB-stored keys are encrypted at rest with <code>FUSION_SECRET_KEY</code>. Environment variables take precedence over DB keys for the same provider — pick one or the other, not both.</p>
+  <pre><code>GET /secrets                            → { providerKeys, envVars }
+GET /keys                                → { keys: [{ providerId, maskedKey, source }] }
+POST /keys   { providerId, apiKey }
+DELETE /keys/:providerId
+GET /api/env                             → { variables: [{ key, value (masked), source }] }
+POST /api/env  { key, value }             → writes to .env + mutates live config</code></pre>
+
+  <h2 id="session-api">Session &amp; Memory API</h2>
+  <pre><code>GET    /memory/:sessionId                → { sessionId, messages: [...] }
+DELETE /memory/:sessionId                → clears messages (keeps session row)
+GET    /session/:sessionId/preferredExperts
+PUT    /session/:sessionId/preferredExperts
+       { preferredExperts: ["groq_llama3_70b", ...] }
+       → switches profile to "custom" when non-empty</code></pre>
+
+  <h2 id="custom-providers">Custom OpenAI-compatible providers</h2>
+  <p>Any service that speaks the OpenAI Chat Completions API works. Examples: vLLM, Ollama (with OpenAI-compatible shim), LM Studio, OpenRouter, your own self-hosted inference server.</p>
+  <ol>
+    <li>Open the dashboard → <strong>Providers → Add Provider</strong>.</li>
+    <li>Set the <strong>Provider ID</strong> (used internally — no spaces), a friendly <strong>Label</strong>, and the full chat-completions <strong>Endpoint</strong> URL (must be HTTPS; localhost and private IPs are rejected by default).</li>
+    <li>Click <strong>Add</strong>.</li>
+    <li>Go to <strong>Secrets → Add Key</strong> and paste the API key for this provider.</li>
+    <li>Toggle the provider on in the Providers table.</li>
+    <li>Add at least one model under <strong>Models → Add Model</strong> with your endpoint's <code>model</code> field exactly as it expects (e.g. <code>llama-3.1-8b-instant</code>, <code>my-custom-model</code>).</li>
+  </ol>
+  <p>The endpoint is validated by <code>validateProviderUrl</code> — rejects http, private IPs, localhost, and reserved hostnames (<code>.internal</code>, <code>.local</code>). If you need to point at a local server during development, set <code>FUSION_ALLOW_PRIVATE_ENDPOINTS=true</code> in your env (development only).</p>
+
+  <h2 id="custom-models">Custom models</h2>
+  <p>Add any model string your provider recognizes. The fusion engine will call it with the standard OpenAI request shape:</p>
+  <pre><code>POST &lt;your-endpoint&gt;
+{
+  "model": "&lt;model-id-you-specified&gt;",
+  "messages": [{"role":"system","content":"..."},{"role":"user","content":"..."}],
+  "max_tokens": 2500,
+  "temperature": 0.3
+}</code></pre>
+  <p>Response is parsed via <code>extractContent</code>: it looks at <code>choices[0].message.content</code> (OpenAI), then <code>candidates[0].content.parts[].text</code> (Gemini), then plain <code>output_text</code> / <code>text</code> / <code>message</code>. If your endpoint returns a custom shape, you may need to adjust <code>extractContent</code> in <code>src/providers/modelClient.ts</code>.</p>
+
+  <h2 id="fusion-deep-dive">Fusion pipeline in depth</h2>
+  <p>For every chat message, in order:</p>
+  <ol>
+    <li><strong>Load history</strong> for the session. The handler <em>reads before writes</em> so the current turn isn't duplicated into the context.</li>
+    <li><strong>Build a context-aware prompt</strong>: if there's prior history, wrap the in-call user message as <em>"In our prior conversation, the user previously asked: &lt;last turn&gt;. Now they ask: &lt;current&gt;"</em> so cheap models attend to history. The stored message is unchanged.</li>
+    <li><strong>Run web search</strong> if <code>web</code> is <code>on</code> / <code>auto</code> and the query looks like it needs fresh info (heuristic: explicit time/recent keywords).</li>
+    <li><strong>Pick the expert panel</strong> based on <code>profile</code> and the session's <code>preferredExperts</code> (when profile is <code>custom</code>). Provider deduplication caps each provider at <code>maxExpertsPerProvider</code> (default 2).</li>
+    <li><strong>Call the experts in parallel</strong>. Per-call timeout (default 30s). Empty / timed-out / 4xx / 5xx all produce a recorded error and don't fail the whole request.</li>
+    <li><strong>Run the judge</strong> on the successful expert responses (if any judge-eligible model + ≥2 expert answers).</li>
+    <li><strong>Run synthesis</strong> with expert answers + judge evaluation + (optional) web context. If synthesis returns empty content, the handler falls back to the first successful expert response.</li>
+    <li><strong>Continuation</strong>: if synthesis returns <code>finish_reason: "length"</code>, ask the synthesis model to continue, then append. Capped by <code>FUSION_MAX_CONTINUATIONS</code> (default 1).</li>
+    <li><strong>Persist</strong>: store the assistant's final answer in the session's memory.</li>
+    <li><strong>Return</strong>: <code>{ answer, telegramHtml, meta }</code>.</li>
+  </ol>
+
+  <h3>Fallback chain</h3>
+  <ul>
+    <li>All experts fail → <code>formatAllExpertsFailed</code> enumerates which models failed and why.</li>
+    <li>No credentials configured → <code>formatNoExpertsConfigured</code> directs the user to <code>/addkey</code>.</li>
+    <li>Synthesis empty/error → falls back to the first successful expert response.</li>
+  </ul>
+
+  <h2 id="web-search">Web search</h2>
+  <p>When <code>web</code> is <code>on</code> or <code>auto</code>, the engine queries Tavily before answering. Results are folded into the synthesis context. Set <code>TAVILY_API_KEY</code> in <strong>Secrets → Advanced</strong> to enable.</p>
+
+  <h2 id="telegram">Telegram bot</h2>
+  <h3>Setup</h3>
+  <ol>
+    <li>Talk to <a href="https://t.me/BotFather">@BotFather</a> on Telegram, send <code>/newbot</code>, get a token.</li>
+    <li>Add <code>TELEGRAM_BOT_TOKEN=&lt;your-token&gt;</code> in <strong>Secrets → Advanced</strong>. Save. (No restart needed — the polling loop reads it live on every iteration.)</li>
+    <li>Message your bot in Telegram. The first message gets the welcome (<code>/start</code>). Any subsequent text is treated as a chat message (session id <code>telegram:&lt;chat-id&gt;</code>, rate-limited at 1 msg / 2s per chat).</li>
+  </ol>
+
+  <h3>Webhooks (production)</h3>
+  <pre><code># .env
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_WEBHOOK_URL=https://your-host.example.com
+# Fusion auto-registers the webhook at https://your-host/telegram/webhook.</code></pre>
+
+  <h2 id="security">Security</h2>
+  <ul>
+    <li>API keys are encrypted at rest using AES-256-GCM with a key derived from <code>FUSION_SECRET_KEY</code>.</li>
+    <li>SSRF protection: provider endpoints are validated to reject private IPs, localhost, and reserved hostnames.</li>
+    <li>Security headers on every response: CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy (see <code>src/server.ts</code>).</li>
+    <li>Rate limiting: 100 req/min global, 20 req/min on <code>/chat</code>.</li>
+    <li>Input sanitization: error messages never include API keys or secrets.</li>
+    <li>Auth/authz is intentionally absent — this is a self-hosted tool meant for trusted networks. Put it behind a reverse proxy (Caddy / nginx / Cloudflare Tunnel) if exposing it.</li>
+  </ul>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+
+  <h3>Models keep changing their API names</h3>
+  <p>Run <code>npm run check:models</code>. It queries each provider's live model list and compares against <code>src/providers/presets.ts</code>. The CI workflow <code>.github/workflows/model-freshness.yml</code> runs the same check weekly + on PRs that touch presets.</p>
+
+  <h3>"None of the available AI models responded successfully"</h3>
+  <p>Check the per-model errors in <code>meta.errors</code> — most often a 401 (bad key) or 429 (rate-limited).</p>
+
+  <h3>Telegram bot replies but doesn't get my messages</h3>
+  <ol>
+    <li>Confirm the token: <code>curl -s "https://api.telegram.org/bot&lt;TOKEN&gt;/getMe"</code> should return <code>{"ok":true,...}</code>.</li>
+    <li>If a webhook URL is set, the bot is using webhook mode — it won't poll. Check <code>/api/env</code> → <code>TELEGRAM_WEBHOOK_URL</code>.</li>
+    <li>Look at the server logs for <em>"Telegram polling got 401/403"</em> — the token was rotated; update it in <strong>Secrets → Advanced</strong>.</li>
+  </ol>
+
+  <h3>Token-budget changes in Settings don't take effect</h3>
+  <p>They do, immediately. The values are saved to the DB <em>and</em> applied to <code>config.expertMaxTokens</code> on the next chat request (verified by <code>tests/settingsLive.test.ts</code>).</p>
+
+  <h2 id="deploy">Deploy</h2>
+  <h3>Docker</h3>
+  <pre><code>docker build -t free-model-fusion .
+docker run -d --name fmf -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/.env:/app/.env:ro \
+  -e FUSION_SECRET_KEY=$(openssl rand -hex 32) \
+  free-model-fusion</code></pre>
+
+  <h3>Without Docker (production)</h3>
+  <pre><code>npm ci --omit=dev
+npm run build
+FUSION_SECRET_KEY=$(openssl rand -hex 32) \
+  NODE_ENV=production \
+  node dist/index.js</code></pre>
+  <p>Put it behind a reverse proxy that terminates TLS. Recommended: Caddy or Cloudflare Tunnel.</p>
+
+  <h3>Environment variables reference</h3>
+  <table>
+    <tr><th>Key</th><th>Purpose</th><th>Required</th></tr>
+    <tr><td><code>PORT</code></td><td>HTTP port (default 3000)</td><td>no</td></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>SQLite URL (default <code>file:./data/fusion.db</code>)</td><td>no</td></tr>
+    <tr><td><code>FUSION_SECRET_KEY</code></td><td>≥32-char key for encrypting DB keys</td><td><span class="tag tag-yellow">prod</span></td></tr>
+    <tr><td><code>FUSION_DEFAULT_PROFILE</code></td><td><code>speed|balanced|quality|custom</code></td><td>no</td></tr>
+    <tr><td><code>FUSION_MAX_EXPERTS</code></td><td>Max models in the expert panel (default 4)</td><td>no</td></tr>
+    <tr><td><code>FUSION_EXPERT_MAX_TOKENS</code></td><td>Per-expert max output (default 2500)</td><td>no</td></tr>
+    <tr><td><code>FUSION_JUDGE_MAX_TOKENS</code></td><td>(default 1800)</td><td>no</td></tr>
+    <tr><td><code>FUSION_SYNTHESIS_MAX_TOKENS</code></td><td>(default 5000)</td><td>no</td></tr>
+    <tr><td><code>FUSION_CONTINUATION_MAX_TOKENS</code></td><td>(default 2500)</td><td>no</td></tr>
+    <tr><td><code>FUSION_ENABLE_CONTINUATION</code></td><td><code>true</code> (default) / <code>false</code></td><td>no</td></tr>
+    <tr><td><code>FUSION_HISTORY_MESSAGES</code></td><td>Max prior messages fed back (default 12)</td><td>no</td></tr>
+    <tr><td><code>FUSION_HISTORY_CHARS</code></td><td>Char budget for history (default 12000)</td><td>no</td></tr>
+    <tr><td><code>FUSION_WEB_MAX_RESULTS</code></td><td>Tavily results per search (default 5)</td><td>no</td></tr>
+    <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Telegram bot token</td><td>no</td></tr>
+    <tr><td><code>TELEGRAM_WEBHOOK_URL</code></td><td>Public webhook URL (otherwise polling)</td><td>no</td></tr>
+    <tr><td><code>TAVILY_API_KEY</code></td><td>Web search</td><td>no</td></tr>
+    <tr><td><code>OPENROUTER_API_KEY</code> / <code>GROQ_API_KEY</code> / <code>GEMINI_API_KEY</code> / etc.</td><td>Provider API keys</td><td>need ≥1</td></tr>
+    <tr><td><code>CORS_ORIGIN</code></td><td>Allowed origin (default <code>*</code>; lock down in prod)</td><td>no</td></tr>
+  </table>
+
+  <footer>
+    Free Model Fusion · self-hosted AI router · open source
+  </footer>
+</div>
+</body>
+</html>

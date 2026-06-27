@@ -48,6 +48,16 @@ export function registerStaticRoutes(fastify: FastifyInstance): void {
     }
   });
 
+  // Serve the standalone /docs page (static HTML).
+  f.get('/docs', async (_request, reply) => {
+    const html = readPublicFile('docs.html');
+    if (html) {
+      reply.type('text/html').send(html);
+      return;
+    }
+    reply.status(404).send();
+  });
+
   f.get('/', async (_request, reply) => {
     const html = readPublicFile('index.html');
     if (html) {
