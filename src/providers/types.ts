@@ -100,6 +100,15 @@ export interface ChatCompletionResponse {
 // ─── Routing Profile ─────────────────────────────────────
 export type RoutingProfile = 'speed' | 'balanced' | 'quality' | 'custom';
 
+// ─── Reasoning Effort ────────────────────────────────────
+/** How hard the model should try to reason before answering.
+ *  - low: quick, surface-level answers
+ *  - medium: balanced reasoning depth
+ *  - high: thorough reasoning
+ *  - xhigh: maximum reasoning (may increase latency significantly)
+ */
+export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh';
+
 // ─── Web Search Result ───────────────────────────────────
 export interface WebSearchResult {
   title: string;
@@ -149,5 +158,13 @@ export interface FusionResult {
       model: string;
       error: string;
     }>;
+    /** Confidence scores (1-10) from the judge, keyed by model ID. */
+    judgeScores?: Record<string, number>;
+    /** Models that were started but discarded by race mode. */
+    racedAhead?: number;
+    /** Estimated cost in USD (based on model class). */
+    estimatedCostUsd?: number;
+    /** The reasoning effort used for this request. */
+    reasoningEffort?: string;
   };
 }

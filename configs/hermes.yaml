@@ -1,0 +1,42 @@
+# configs/hermes.yaml
+# Hermes AI agent configuration — Free Model Fusion
+#
+# Copy relevant sections into ~/.hermes/config.yaml
+# Or run:  hermes model  (then choose "custom" when prompted)
+#
+# ── Prerequisite ───────────────────────────────────────
+# Start BOTH the fusion server AND the OpenAI adapter:
+#   Terminal 1: npm run dev
+#   Terminal 2: node configs/openai-adapter.mjs
+#
+# The adapter translates OpenAI format → Fusion format.
+# This is required because Hermes speaks OpenAI, and Fusion
+# speaks its own /chat protocol.
+
+model:
+  # Use "custom" for non-standard endpoints
+  provider: custom
+
+  # Point at the adapter (NOT the fusion server directly)
+  base_url: "http://localhost:3001/v1"
+
+  # Model name — maps to fusion routing profiles:
+  #   fusion-speed     → speed profile
+  #   fusion-balanced  → balanced profile (default)
+  #   fusion-quality   → quality profile
+  default: "fusion-balanced"
+
+  # No API key needed for localhost
+  key_env: ""
+
+  context_window: 128000
+
+# ── Custom parameters ─────────────────────────────────
+# To control fusion behavior per-request, add these to
+# your Hermes message body as extra fields:
+#   fusionProfile: "speed|balanced|quality|custom"
+#   fusionWeb: "on|off|auto"
+#   fusionSessionId: "my-session"
+#
+# Without these, the adapter uses defaults:
+#   profile: balanced,  web: off,  session: per-client-ip

@@ -24,7 +24,8 @@ export function isTruncated(finishReason?: string): boolean {
 export async function continueResponse(
   originalContent: string,
   model: RegisteredModel,
-  finishReason?: string
+  finishReason?: string,
+  reasoningEffort?: string
 ): Promise<ContinuationResult> {
   if (!config.enableContinuation) {
     return {
@@ -58,7 +59,7 @@ export async function continueResponse(
         { role: 'user', content: originalContent },
         { role: 'assistant', content: CONTINUATION_PROMPT },
       ],
-      { maxTokens: config.continuationMaxTokens, temperature: 0.3 }
+      { maxTokens: config.continuationMaxTokens, temperature: 0.3, reasoningEffort }
     );
 
     // Don't append empty/whitespace continuation content — it would only add

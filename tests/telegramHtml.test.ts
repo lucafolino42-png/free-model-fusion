@@ -115,6 +115,38 @@ Caveat
     expect(result).toContain('<code>0</code>');
   });
 
+  it('formats Sources section with blockquote label', () => {
+    const input = 'The capital of France is Paris.\n\nSources\n- https://example.com/france\n- Travel Guide — https://lonelyplanet.com/france';
+    const result = convertToTelegramHtml(input);
+    expect(result).toContain('<i>Sourced from:</i>');
+    expect(result).toContain('example.com/france');
+    expect(result).toContain('Travel Guide');
+    expect(result).toContain('<b>Travel Guide</b>');
+  });
+
+  it('formats References section', () => {
+    const input = 'Key findings.\n\nReferences\n[1] Article Title — https://arxiv.org/abs/1234';
+    const result = convertToTelegramHtml(input);
+    expect(result).toContain('<i>Sourced from:</i>');
+    expect(result).toContain('<code>[1]</code>');
+  });
+
+  it('formats numbered steps with bold numbers', () => {
+    const result = convertToTelegramHtml('1. First step\n2. Second step');
+    expect(result).toContain('<b>1.</b>');
+    expect(result).toContain('<b>2.</b>');
+  });
+
+  it('formats inline source citations [N]', () => {
+    const result = convertToTelegramHtml('[1] Reference title here');
+    expect(result).toContain('<code>[1]</code>');
+  });
+
+  it('keeps bullet items as bullets', () => {
+    const result = convertToTelegramHtml('* 1. This is not a numbered step');
+    expect(result).toContain('*');
+  });
+
   it('handles Markdown bold', () => {
     const result = convertToTelegramHtml('This is **bold** text');
     expect(result).toContain('<b>bold</b>');

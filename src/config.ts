@@ -45,10 +45,10 @@ export const config = {
   maxExperts: parseInt(process.env.FUSION_MAX_EXPERTS || '4', 10),
   maxExpertsPerProvider: parseInt(process.env.FUSION_MAX_EXPERTS_PER_PROVIDER || '2', 10),
 
-  expertMaxTokens: parseInt(process.env.FUSION_EXPERT_MAX_TOKENS || '2500', 10),
-  judgeMaxTokens: parseInt(process.env.FUSION_JUDGE_MAX_TOKENS || '1800', 10),
-  synthesisMaxTokens: parseInt(process.env.FUSION_SYNTHESIS_MAX_TOKENS || '5000', 10),
-  continuationMaxTokens: parseInt(process.env.FUSION_CONTINUATION_MAX_TOKENS || '2500', 10),
+  expertMaxTokens: parseInt(process.env.FUSION_EXPERT_MAX_TOKENS || '7500', 10),
+  judgeMaxTokens: parseInt(process.env.FUSION_JUDGE_MAX_TOKENS || '5400', 10),
+  synthesisMaxTokens: parseInt(process.env.FUSION_SYNTHESIS_MAX_TOKENS || '15000', 10),
+  continuationMaxTokens: parseInt(process.env.FUSION_CONTINUATION_MAX_TOKENS || '7500', 10),
   enableContinuation: process.env.FUSION_ENABLE_CONTINUATION !== 'false',
   maxContinuations: parseInt(process.env.FUSION_MAX_CONTINUATIONS || '1', 10),
 

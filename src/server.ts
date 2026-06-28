@@ -96,6 +96,9 @@ export async function createServer() {
       logger.info(`Server listening on port ${config.port}`);
       logger.info(`Environment: ${config.nodeEnv}`);
       logger.info(`Chat API: http://localhost:${config.port}/chat`);
+      logger.info(`OpenAI-compatible: http://localhost:${config.port}/v1/chat/completions`);
+      logger.info(`Agent models: http://localhost:${config.port}/v1/models`);
+      logger.info(`Agent embeddings: http://localhost:${config.port}/v1/embeddings`);
       logger.info(`Health: http://localhost:${config.port}/health`);
     } catch (error) {
       logger.error('Failed to start server', { error: String(error) });

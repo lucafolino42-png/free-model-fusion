@@ -1,4 +1,5 @@
 import { saveCredential, deleteCredential, listCredentials } from '../../providers/credentials.js';
+import { config } from '../../config.js';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 
@@ -21,6 +22,11 @@ export function registerKeyRoutes(fastify: FastifyInstance): void {
     const body = request.body as { providerId: string; apiKey: string };
     try {
       await saveCredential(body.providerId, body.apiKey);
+      // Tavily key needs to be live-updated in config so web search works immediately
+      // and GET /settings reflects it via tavilyKeyConfigured.
+      if (body.providerId === 'tavily') {
+        Object.assign(config, { tavilyApiKey: body.apiKey });
+      }
       reply.status(201);
       return { success: true, providerId: body.providerId };
     } catch (error) {
@@ -35,6 +41,10 @@ export function registerKeyRoutes(fastify: FastifyInstance): void {
     if (!success) {
       reply.status(404);
       return { error: `Key for ${providerId} not found` };
+    }
+    // Clear in-memory config for Tavily so warnings reappear.
+    if (providerId === 'tavily') {
+      Object.assign(config, { tavilyApiKey: '' });
     }
     return { success: true };
   });

@@ -15,6 +15,7 @@ export async function getOrCreateSession(
   preferredExperts: string[];
   preferredJudge: string | null;
   preferredSynthesis: string | null;
+  reasoningEffort: string;
   isNew: boolean;
 }> {
   const existing = await db
@@ -32,6 +33,7 @@ export async function getOrCreateSession(
       preferredExperts: parseJsonArray(s.preferredExperts),
       preferredJudge: s.preferredJudge || null,
       preferredSynthesis: s.preferredSynthesis || null,
+      reasoningEffort: s.reasoningEffort || 'medium',
       isNew: false,
     };
   }
@@ -55,6 +57,7 @@ export async function getOrCreateSession(
     preferredExperts: [],
     preferredJudge: null,
     preferredSynthesis: null,
+    reasoningEffort: 'medium',
     isNew: true,
   };
 }
@@ -151,6 +154,7 @@ export async function updateSessionSettings(
     preferredExperts?: string[];
     preferredJudge?: string;
     preferredSynthesis?: string;
+    reasoningEffort?: string;
   }
 ): Promise<void> {
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
@@ -163,11 +167,76 @@ export async function updateSessionSettings(
     updateData.preferredJudge = settings.preferredJudge;
   if (settings.preferredSynthesis !== undefined)
     updateData.preferredSynthesis = settings.preferredSynthesis;
+  if (settings.reasoningEffort !== undefined)
+    updateData.reasoningEffort = settings.reasoningEffort;
 
   await db
     .update(sessions)
     .set(updateData)
     .where(eq(sessions.id, sessionId));
+}
+
+// ─── List All Sessions ───────────────────────────────────
+export async function listSessions(): Promise<
+  Array<{
+    id: string;
+    source: string;
+    updatedAt: Date | null;
+    profile: string;
+    webMode: string;
+    messageCount: number;
+    lastMessagePreview: string;
+  }>
+> {
+  // Get all sessions ordered by most recently updated first.
+  const all = await db
+    .select()
+    .from(sessions)
+    .orderBy(desc(sessions.updatedAt))
+    .limit(100);
+
+  // For each session, grab the most recent message (if any) to build a preview.
+  const result = await Promise.all(
+    all.map(async (s) => {
+      const msgs = await db
+        .select({ content: messages.content, role: messages.role })
+        .from(messages)
+        .where(eq(messages.sessionId, s.id))
+        .orderBy(desc(messages.createdAt), desc(messages.id))
+        .limit(1);
+
+      const lastMsg = msgs[0];
+      const preview = lastMsg
+        ? (lastMsg.role === 'user' ? '👤 ' : '🤖 ') + lastMsg.content.slice(0, 80)
+        : '(no messages)';
+
+      // Also count total messages
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(messages)
+        .where(eq(messages.sessionId, s.id));
+
+      return {
+        id: s.id,
+        source: s.source,
+        updatedAt: s.updatedAt,
+        profile: s.profile || 'balanced',
+        webMode: s.webMode || 'off',
+        messageCount: Number(countResult[0]?.count ?? 0),
+        lastMessagePreview: preview,
+      };
+    })
+  );
+
+  // Sort by updatedAt descending, sessions with messages first
+  result.sort((a, b) => {
+    const aHas = a.messageCount > 0 ? 1 : 0;
+    const bHas = b.messageCount > 0 ? 1 : 0;
+    if (aHas !== bHas) return bHas - aHas;
+    return (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0);
+  });
+
+  return result;
 }
 
 // ─── Helper ──────────────────────────────────────────────

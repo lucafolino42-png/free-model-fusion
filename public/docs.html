@@ -15,10 +15,11 @@
     }
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);line-height:1.6;-webkit-font-smoothing:antialiased}
-    .wrap{max-width:920px;margin:0 auto;padding:48px 24px 96px}
+    .wrap{max-width:960px;margin:0 auto;padding:48px 24px 96px}
     h1{font-size:36px;font-weight:700;margin:0 0 12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
     h2{font-size:24px;font-weight:600;margin:48px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
     h3{font-size:18px;font-weight:600;margin:28px 0 10px}
+    h4{font-size:15px;font-weight:600;margin:18px 0 8px;color:var(--accent)}
     p{margin:8px 0}
     .lede{font-size:17px;color:var(--text-muted);margin-bottom:24px}
     .meta{font-size:13px;color:var(--text-2);margin-bottom:32px}
@@ -58,22 +59,34 @@
   </div>
 
   <h1>Free Model Fusion</h1>
-  <p class="lede">A self-hosted AI router: every chat message is sent to multiple models in parallel, judged, and synthesized. This page is the full reference — API, fusion internals, custom providers, Telegram, troubleshooting.</p>
+  <p class="lede">A self-hosted AI router: every chat message is sent to multiple models in parallel, judged, and synthesized. This page is the full reference — API, fusion internals, custom providers, web UI, Telegram, commands, and troubleshooting.</p>
 
   <nav class="toc" aria-label="Table of contents">
     <h3>On this page</h3>
     <ol>
       <li><a href="#quickstart">Quickstart</a></li>
       <li><a href="#concepts">Concepts</a></li>
+      <li><a href="#web-ui">Web UI Dashboard</a></li>
+      <li><a href="#commands">Commands Reference</a></li>
       <li><a href="#chat-api">Chat API</a></li>
+      <li><a href="#openai-compatible">OpenAI-Compatible Endpoint</a></li>
+      <li><a href="#embeddings">Embeddings API</a></li>
       <li><a href="#providers-api">Provider API</a></li>
       <li><a href="#models-api">Model API</a></li>
       <li><a href="#secrets-api">Secrets (API keys) API</a></li>
-      <li><a href="#session-api">Session &amp; Memory API</a></li>
+      <li><a href="#settings-api">Settings &amp; Memory API</a></li>
+      <li><a href="#env-api">Environment Variables API</a></li>
       <li><a href="#custom-providers">Custom OpenAI-compatible providers</a></li>
       <li><a href="#custom-models">Custom models</a></li>
+      <li><a href="#reasoning-effort">Reasoning Effort</a></li>
+      <li><a href="#skills">Skills System</a></li>
+      <li><a href="#wizard">Setup Wizard</a></li>
       <li><a href="#fusion-deep-dive">Fusion pipeline in depth</a></li>
+      <li><a href="#race-mode">Race Mode</a></li>
+      <li><a href="#query-complexity">Query Complexity Analysis</a></li>
+      <li><a href="#cost-estimation">Cost Estimation</a></li>
       <li><a href="#web-search">Web search</a></li>
+      <li><a href="#external-agents">External Agents (OpenClaw, Hermes)</a></li>
       <li><a href="#telegram">Telegram bot</a></li>
       <li><a href="#security">Security</a></li>
       <li><a href="#troubleshooting">Troubleshooting</a></li>
@@ -96,9 +109,9 @@ echo "GROQ_API_KEY=gsk_your_key_here" >> .env</code></pre>
   <h3>3. Run</h3>
   <pre><code>npm run dev   # development with hot reload
 # or
-npm run build &amp;&amp; npm start   # production</code></pre>
+npm run build && npm start   # production</code></pre>
 
-  <p>Open <code>http://localhost:3000</code>, go to <strong>Secrets</strong>, and add your first API key. Then type in <strong>Chat</strong>.</p>
+  <p>Open <code>http://localhost:3000</code> to see the <strong>Web UI Dashboard</strong>. Go to <strong>Secrets</strong> and add your first API key, then type in <strong>Chat</strong>. Or use the <strong>Setup Wizard</strong> from the sidebar for guided onboarding.</p>
 
   <h2 id="concepts">Concepts</h2>
   <div class="row">
@@ -123,10 +136,117 @@ npm run build &amp;&amp; npm start   # production</code></pre>
     <div class="col">
       <div class="card">
         <h3>Session</h3>
-        <p>A conversation thread identified by <code>sessionId</code>. Stores message history, profile, web-search mode, and your custom model set.</p>
+        <p>A conversation thread identified by <code>sessionId</code>. Stores message history, profile, web-search mode, reasoning effort, and your custom model set.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>Skill</h3>
+        <p>A reusable prompt fragment that guides model behavior. Skills adapt the fusion pipeline for specific tasks like code review, debugging, or education. Load with <code>/skills load &lt;name&gt;</code>.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>Reasoning Effort</h3>
+        <p>Controls how deeply models think before responding. Levels: <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code>. Sent to OpenRouter and upstream reasoning models.</p>
       </div>
     </div>
   </div>
+
+  <h2 id="web-ui">Web UI Dashboard</h2>
+  <p>Free Model Fusion ships with a full-featured single-page application (SPA) dashboard — no framework required. Open <code>http://localhost:3000</code> after starting the server.</p>
+
+  <h3>Pages</h3>
+  <table>
+    <tr><th>Page</th><th>Description</th></tr>
+    <tr><td>💬 <strong>Chat</strong></td><td>Send messages, view conversation history, toggle web search. Type <code>/help</code> for commands. Use <code>/</code> to trigger command autocomplete.</td></tr>
+    <tr><td>📊 <strong>Dashboard</strong></td><td>Provider status (online/offline), model stats, token budget overview, health status, quick links.</td></tr>
+    <tr><td>🏢 <strong>Providers</strong></td><td>View all providers, add custom providers, toggle enable/disable, see endpoint and key status.</td></tr>
+    <tr><td>🤖 <strong>Models</strong></td><td>View all models across providers, add custom models, toggle, see speed/quality ratings and model roles.</td></tr>
+    <tr><td>🔑 <strong>API Keys</strong></td><td>Add, delete, and view API keys (masked) per provider. Keys stored encrypted in the database.</td></tr>
+    <tr><td>⚙️ <strong>Settings</strong></td><td>Change profile (speed/balanced/quality/custom), web search mode (on/off/auto), token budgets (expert/judge/synthesis). Changes take effect immediately — no restart needed.</td></tr>
+    <tr><td>🔐 <strong>Secrets</strong></td><td>Advanced secrets management: view and edit all environment variables including provider API keys, Telegram token, Tavily key, and fusion settings.</td></tr>
+    <tr><td>💾 <strong>Memory</strong></td><td>View conversation history for any session. See loaded messages, profile settings, and custom experts.</td></tr>
+    <tr><td>🚀 <strong>Setup Wizard</strong></td><td>Step-by-step onboarding: add your first API key, choose a profile, configure web search. Great for new users.</td></tr>
+  </table>
+
+  <h3>Dashboard features</h3>
+  <ul>
+    <li><strong>Health indicator</strong> — green dot when the server is healthy, red when offline</li>
+    <li><strong>Provider cards</strong> — show online/offline status, key configured, models count</li>
+    <li><strong>Token budget summary</strong> — expert, judge, synthesis, continuation limits at a glance</li>
+    <li><strong>Dark mode</strong> — always-on dark theme with accent colors</li>
+    <li><strong>Responsive</strong> — mobile-friendly sidebar with hamburger menu</li>
+  </ul>
+
+  <h2 id="commands">Commands Reference</h2>
+  <p>All commands work in <strong>Chat</strong> (web UI), the <strong>API</strong> (<code>POST /chat</code>), and <strong>Telegram</strong>. Use <code>/help &lt;command&gt;</code> for detailed help on any command.</p>
+
+  <h3>Profiles &amp; Routing</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td><code>/profile [mode]</code></td><td>View or change routing profile: <code>speed|balanced|quality|custom</code></td></tr>
+    <tr><td><code>/speed [question]</code></td><td>Quick answer (fastest models). With a question, one-time speed override.</td></tr>
+    <tr><td><code>/balanced [question]</code></td><td>Balanced mode (default). Good mix of speed and quality.</td></tr>
+    <tr><td><code>/quality [question]</code></td><td>Deep reasoning with stronger models. One-time or persistent.</td></tr>
+    <tr><td><code>/custom [question]</code></td><td>Manual model selection. Use <code>/usemodel</code> to pick experts.</td></tr>
+  </table>
+
+  <h3>Models &amp; Providers</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td><code>/models</code></td><td>List all available models with status, speed/quality, and roles</td></tr>
+    <tr><td><code>/providers</code></td><td>List all providers with endpoint, ratings, and key status</td></tr>
+    <tr><td><code>/addkey &lt;provider&gt; &lt;key&gt;</code></td><td>Add an API key for a provider</td></tr>
+    <tr><td><code>/deletekey &lt;provider&gt;</code></td><td>Remove a stored API key</td></tr>
+    <tr><td><code>/listkeys</code></td><td>Show all configured API keys (masked)</td></tr>
+    <tr><td><code>/addprovider {...}</code></td><td>Add a custom provider (JSON: id, endpoint)</td></tr>
+    <tr><td><code>/deleteprovider &lt;id&gt;</code></td><td>Remove a custom provider</td></tr>
+    <tr><td><code>/enableprovider &lt;id&gt;</code></td><td>Enable a provider's models</td></tr>
+    <tr><td><code>/disableprovider &lt;id&gt;</code></td><td>Disable a provider</td></tr>
+    <tr><td><code>/addmodel {...}</code></td><td>Add a custom model (JSON: provider, key, model)</td></tr>
+    <tr><td><code>/deletemodel &lt;key&gt;</code></td><td>Remove a custom model</td></tr>
+    <tr><td><code>/usemodel &lt;key&gt;</code> (alias: <code>/add</code>)</td><td>Add a model to your custom expert set. Sets profile to custom.</td></tr>
+    <tr><td><code>/unusemodel &lt;key&gt;</code> (alias: <code>/remove</code>)</td><td>Remove a model from your custom expert set</td></tr>
+    <tr><td><code>/setjudge &lt;key&gt;</code></td><td>Set a specific model as the judge</td></tr>
+    <tr><td><code>/setsynthesis &lt;key&gt;</code></td><td>Set a specific model as the synthesis model</td></tr>
+    <tr><td><code>/reasoning [level]</code></td><td>Control reasoning effort: <code>low|medium|high|xhigh</code></td></tr>
+  </table>
+
+  <h3>Web Search</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td><code>/addsearchkey tavily &lt;key&gt;</code></td><td>Add a Tavily API key for web search</td></tr>
+    <tr><td><code>/web [on|off|auto]</code></td><td>Control web search mode. <code>auto</code> searches for time-sensitive queries.</td></tr>
+    <tr><td><code>/search &lt;query&gt;</code></td><td>Perform a raw web search and display results (no AI)</td></tr>
+  </table>
+
+  <h3>Memory &amp; Sessions</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td><code>/memory</code></td><td>Show recent conversation history</td></tr>
+    <tr><td><code>/clearmemory confirm</code></td><td>Clear session memory (preserves settings)</td></tr>
+    <tr><td><code>/newchat</code></td><td>Clear memory for a fresh start (no confirmation needed)</td></tr>
+    <tr><td><code>/stats</code></td><td>Show session statistics and configuration</td></tr>
+  </table>
+
+  <h3>Tokens</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td><code>/tokens</code></td><td>Show current token budget settings</td></tr>
+    <tr><td><code>/settokens &lt;e&gt; &lt;j&gt; &lt;s&gt;</code></td><td>Set expert, judge, and synthesis token limits</td></tr>
+    <tr><td><code>/resettokens confirm</code></td><td>Reset token budgets to defaults (expert=7500, judge=5400, synthesis=15000)</td></tr>
+  </table>
+
+  <h3>Setup &amp; Skills</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td><code>/wizard</code></td><td>Guided setup: add API key, choose profile, configure web search</td></tr>
+    <tr><td><code>/wizard status</code></td><td>Check setup progress</td></tr>
+    <tr><td><code>/skills</code></td><td>List, load, unload, or search AI skills</td></tr>
+    <tr><td><code>/resetregistry confirm</code></td><td>Delete all custom providers and models (preserves built-in presets)</td></tr>
+    <tr><td><code>/help [command]</code></td><td>Get detailed help for any command</td></tr>
+  </table>
 
   <h2 id="chat-api">Chat API</h2>
   <p>Send a message, get back a routed + synthesized response.</p>
@@ -151,7 +271,11 @@ Content-Type: application/json
     "models":   { "experts": ["groq_llama3_8b", "groq_llama3_70b"], "judge": "groq_llama3_70b", "synthesis": "groq_llama3_70b" },
     "memory":   { "sessionId": "default", "messagesLoaded": 4 },
     "web":      { "enabled": false, "searched": false, "resultsCount": 0 },
-    "errors":   []
+    "tokens":   { "expert": 7500, "judge": 5400, "synthesis": 15000, "continuation": 7500, "totalEstimated": 28500 },
+    "errors":   [],
+    "racedAhead": 0,
+    "estimatedCostUsd": 0.0025,
+    "reasoningEffort": "medium"
   }
 }</code></pre>
 
@@ -163,18 +287,92 @@ Content-Type: application/json
     <tr><td>500</td><td>Unexpected server error</td><td><code>{ error: { code: "INTERNAL_ERROR", message } }</code></td></tr>
   </table>
 
-  <h3>In-chat commands (also work via <code>/webhook/chat</code>)</h3>
+  <h2 id="openai-compatible">OpenAI-Compatible Endpoint</h2>
+  <p>Free Model Fusion exposes a full OpenAI-compatible <code>/v1/chat/completions</code> endpoint. This allows any OpenAI SDK client (Cursor, Continue.dev, Open WebUI, Hermes, OpenClaw, custom scripts) to use Fusion as a drop-in backend.</p>
+
+  <h3>Endpoints</h3>
+  <pre><code>POST /chat/completions
+POST /v1/chat/completions</code></pre>
+
+  <h3>Standard request format</h3>
+  <pre><code>POST /v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer fusion
+
+{
+  "model": "fusion-balanced",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is the capital of France?"}
+  ],
+  "stream": false,
+  "max_tokens": 4096,
+  "temperature": 0.7
+}</code></pre>
+
+  <h3>Profile detection from model name</h3>
+  <p>The <code>model</code> field is parsed intelligently to determine the routing profile:</p>
   <table>
-    <tr><th>Command</th><th>Effect</th></tr>
-    <tr><td><code>/help</code></td><td>List all chat commands</td></tr>
-    <tr><td><code>/models</code></td><td>List available models</td></tr>
-    <tr><td><code>/providers</code></td><td>List providers + their enabled state</td></tr>
-    <tr><td><code>/profile &lt;speed|balanced|quality|custom&gt;</code></td><td>Change the routing profile for this session</td></tr>
-    <tr><td><code>/add &lt;model-key&gt;</code></td><td>Add a model to your custom set (requires profile: custom)</td></tr>
-    <tr><td><code>/remove &lt;model-key&gt;</code></td><td>Remove a model from your custom set</td></tr>
-    <tr><td><code>/listkeys</code></td><td>List configured API keys (masked)</td></tr>
-    <tr><td><code>/stats</code></td><td>Show session memory stats</td></tr>
+    <tr><th>Pattern</th><th>Profile</th><th>Examples</th></tr>
+    <tr><td>Exact match</td><td>speed/balanced/quality/custom</td><td><code>speed</code>, <code>quality</code>, <code>fast</code>, <code>deep</code></td></tr>
+    <tr><td>Prefix</td><td>Uses prefix</td><td><code>speed-gpt</code>, <code>quality-claude</code>, <code>balanced-model</code></td></tr>
+    <tr><td>Suffix</td><td>Uses suffix</td><td><code>my-model-speed</code>, <code>fusion-balanced</code></td></tr>
+    <tr><td>Keyword scoring</td><td>Best match</td><td><code>turbo</code> → speed, <code>sonnet</code> → quality, <code>groq</code> → speed, <code>gemini</code> → quality</td></tr>
   </table>
+
+  <h3>Streaming support</h3>
+  <p>Set <code>stream: true</code> to receive server-sent events (SSE) in standard OpenAI format:</p>
+  <pre><code>data: {"choices":[{"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"choices":[{"delta":{"content":"The"},"finish_reason":null}]}
+
+data: {"choices":[{"delta":{"content":" capital of France is Paris."},"finish_reason":null}]}
+
+data: {"choices":[{"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]</code></pre>
+
+  <h3>Tool / Function calling</h3>
+  <p>The endpoint detects tool call requests and parses tool call responses automatically. See the <a href="#external-agents">External Agents</a> section for a working example with the OpenAI adapter.</p>
+
+  <h3>Custom fusion fields</h3>
+  <p>Extra body fields control fusion behavior per-request:</p>
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Effect</th></tr>
+    <tr><td><code>fusionProfile</code></td><td><code>"speed"</code> · <code>"balanced"</code> · <code>"quality"</code> · <code>"custom"</code></td><td>Override the routing profile for this request</td></tr>
+    <tr><td><code>fusionWeb</code></td><td><code>"on"</code> · <code>"off"</code> · <code>"auto"</code></td><td>Override web search mode</td></tr>
+    <tr><td><code>fusionSessionId</code></td><td>any string</td><td>Persist conversation context across turns</td></tr>
+  </table>
+
+  <h2 id="embeddings">Embeddings API</h2>
+  <p>OpenAI-compatible embeddings endpoint. Generates deterministic 384-dimensional embeddings for any text input. Useful for semantic search, clustering, or RAG pipelines.</p>
+
+  <pre><code>POST /embeddings
+POST /v1/embeddings
+
+{
+  "model": "fusion-embed",
+  "input": "Your text to embed"
+}
+
+// Response (OpenAI-compatible):
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [0.012345, -0.006789, ...]  // 384-dim vector
+    }
+  ],
+  "model": "fusion-embed",
+  "usage": {
+    "prompt_tokens": 8,
+    "total_tokens": 8
+  }
+}</code></pre>
+
+  <p>Accepts both a single string and an array of strings for batch embedding. Rate-limited to 60 requests/minute.</p>
 
   <h2 id="providers-api">Provider API</h2>
   <p>Providers are auto-merged from built-in presets + your custom additions.</p>
@@ -194,17 +392,38 @@ DELETE /models/:key                      → custom only (presets are immutable)
   <pre><code>GET /secrets                            → { providerKeys, envVars }
 GET /keys                                → { keys: [{ providerId, maskedKey, source }] }
 POST /keys   { providerId, apiKey }
-DELETE /keys/:providerId
-GET /api/env                             → { variables: [{ key, value (masked), source }] }
-POST /api/env  { key, value }             → writes to .env + mutates live config</code></pre>
+DELETE /keys/:providerId</code></pre>
 
-  <h2 id="session-api">Session &amp; Memory API</h2>
+  <h2 id="settings-api">Settings &amp; Memory API</h2>
+  <h3>Global Settings</h3>
+  <pre><code>GET /settings   → { settings: { profile, webMode, expertMaxTokens, judgeMaxTokens, synthesisMaxTokens, tavilyKeyConfigured } }
+
+POST /settings  { profile?, webMode?, expertMaxTokens?, judgeMaxTokens?, synthesisMaxTokens? }
+                → { success: true, warning?: string }</code></pre>
+  <p>Settings changes take effect immediately — no server restart needed. Values are saved to the DB and live-mutated in the config.</p>
+
+  <h3>Session Memory</h3>
   <pre><code>GET    /memory/:sessionId                → { sessionId, messages: [...] }
-DELETE /memory/:sessionId                → clears messages (keeps session row)
-GET    /session/:sessionId/preferredExperts
+DELETE /memory/:sessionId                → clears messages (keeps session row)</code></pre>
+
+  <h3>Session Custom Experts</h3>
+  <pre><code>GET    /session/:sessionId/preferredExperts
+       → { sessionId, preferredExperts: [...], profile }
+
 PUT    /session/:sessionId/preferredExperts
        { preferredExperts: ["groq_llama3_70b", ...] }
        → switches profile to "custom" when non-empty</code></pre>
+
+  <h3>List All Sessions</h3>
+  <pre><code>GET /sessions   → { sessions: [...] }</code></pre>
+
+  <h2 id="env-api">Environment Variables API</h2>
+  <p>View and update environment variables at runtime. Updates are written to <code>.env</code> and applied to the live config immediately.</p>
+  <pre><code>GET  /api/env   → { variables: [{ key, value (masked), source }] }
+POST /api/env  { key, value }
+       → { success: true, key, maskedValue }
+
+// Allowed keys: FUSION_*, TELEGRAM_*, TAVILY_*, PORT, NODE_ENV, DATABASE_URL, *_API_KEY</code></pre>
 
   <h2 id="custom-providers">Custom OpenAI-compatible providers</h2>
   <p>Any service that speaks the OpenAI Chat Completions API works. Examples: vLLM, Ollama (with OpenAI-compatible shim), LM Studio, OpenRouter, your own self-hosted inference server.</p>
@@ -229,19 +448,113 @@ PUT    /session/:sessionId/preferredExperts
 }</code></pre>
   <p>Response is parsed via <code>extractContent</code>: it looks at <code>choices[0].message.content</code> (OpenAI), then <code>candidates[0].content.parts[].text</code> (Gemini), then plain <code>output_text</code> / <code>text</code> / <code>message</code>. If your endpoint returns a custom shape, you may need to adjust <code>extractContent</code> in <code>src/providers/modelClient.ts</code>.</p>
 
+  <h2 id="reasoning-effort">Reasoning Effort</h2>
+  <p>The reasoning effort system controls how deeply models think before responding. This is useful for tasks that require multi-step reasoning, analysis, or chain-of-thought.</p>
+
+  <h3>Levels</h3>
+  <table>
+    <tr><th>Level</th><th>Description</th><th>Use case</th></tr>
+    <tr><td><code>low</code></td><td>Fast responses, minimal reasoning</td><td>Simple Q&amp;A, quick lookups</td></tr>
+    <tr><td><code>medium</code></td><td>Balanced reasoning (default)</td><td>General conversation</td></tr>
+    <tr><td><code>high</code></td><td>Deeper reasoning for complex tasks</td><td>Analysis, debugging, planning</td></tr>
+    <tr><td><code>xhigh</code></td><td>Maximum reasoning depth (may be slow)</td><td>Research, hard proofs, architecture</td></tr>
+  </table>
+
+  <h3>Usage</h3>
+  <pre><code># Set reasoning level (persistent per session)
+/reasoning high
+
+# View current level
+/reasoning</code></pre>
+
+  <p>Reasoning effort is <strong>persistent per session</strong>. Set it with <code>/reasoning &lt;level&gt;</code> and it applies to all subsequent messages. There is no per-request override — change the session level when you need different reasoning depth.</p>
+
+  <h3>How it works</h3>
+  <p>The <code>reasoning_effort</code> parameter is sent to models that support it. Currently, this is routed through <strong>OpenRouter</strong>, which passes it through to upstream reasoning models (OpenAI o-series, Anthropic Claude). The <code>xhigh</code> level also enables a <code>thinking</code> mode with extended token budgets for the deepest reasoning.</p>
+
+  <p>The reasoning effort level is included in the response meta as <code>meta.reasoningEffort</code>.</p>
+
+  <h2 id="skills">Skills System</h2>
+  <p>Skills are reusable prompt fragments that guide model behavior for specific tasks. When a skill is loaded, its instructions are appended to the expert system prompts, biasing the models toward a particular style, depth, or domain focus.</p>
+
+  <h3>Available Skills</h3>
+  <table>
+    <tr><th>Skill</th><th>Description</th></tr>
+    <tr><td><strong>Code Review</strong></td><td>Analyze code for bugs, style issues, security, and performance. Provides structured feedback with file paths and line numbers.</td></tr>
+    <tr><td><strong>Web Design</strong></td><td>Design and review UIs with accessibility (WCAG 2.2), responsiveness, and modern design principles.</td></tr>
+    <tr><td><strong>Backend Development</strong></td><td>Design APIs, databases, authentication, and server architecture with production-grade patterns (OWASP Top 10).</td></tr>
+    <tr><td><strong>Debugging</strong></td><td>Systematic approach to diagnosing and fixing bugs with reproduction steps and root cause analysis.</td></tr>
+    <tr><td><strong>Concise</strong></td><td>Ultra-brief answers — bullet points, no fluff, minimal prose.</td></tr>
+    <tr><td><strong>Educational</strong></td><td>Explain concepts step by step like a teacher. Includes analogies, examples, and common pitfalls.</td></tr>
+  </table>
+
+  <h3>Usage</h3>
+  <pre><code># List all available skills
+/skills
+
+# Load a skill (prompt is active for all subsequent messages)
+/skills load code-review
+
+# Unload the current skill
+/skills unload
+
+# Search for a skill
+/skills search debugging</code></pre>
+
+  <p>Skills are session-independent — loading a skill affects all subsequent messages until unloaded. Only one skill can be active at a time.</p>
+
+  <h2 id="wizard">Setup Wizard</h2>
+  <p>The wizard provides step-by-step onboarding for new users. It guides you through adding an API key, choosing a profile, and configuring web search.</p>
+
+  <h3>Steps</h3>
+  <ol>
+    <li><strong>Welcome</strong> — Overview and getting started</li>
+    <li><strong>API Key</strong> — Add a key from a supported provider (Groq, Gemini, OpenRouter, etc.)</li>
+    <li><strong>Profile</strong> — Choose speed, balanced, or quality routing</li>
+    <li><strong>Web Search</strong> — (Optional) Configure Tavily for real-time search</li>
+    <li><strong>Done</strong> — Summary and next steps</li>
+  </ol>
+
+  <h3>Commands</h3>
+  <pre><code># Show current step
+/wizard
+
+# Add API key and advance
+/wizard key groq gsk_your_key_here
+
+# Set profile and advance
+/wizard profile balanced
+
+# Configure web search and advance
+/wizard web tvly-your-key-here
+
+# Skip current step
+/wizard skip
+
+# Check progress
+/wizard status
+
+# Reset wizard
+/wizard start
+
+# Mark setup complete
+/wizard done</code></pre>
+
   <h2 id="fusion-deep-dive">Fusion pipeline in depth</h2>
   <p>For every chat message, in order:</p>
   <ol>
     <li><strong>Load history</strong> for the session. The handler <em>reads before writes</em> so the current turn isn't duplicated into the context.</li>
-    <li><strong>Build a context-aware prompt</strong>: if there's prior history, wrap the in-call user message as <em>"In our prior conversation, the user previously asked: &lt;last turn&gt;. Now they ask: &lt;current&gt;"</em> so cheap models attend to history. The stored message is unchanged.</li>
-    <li><strong>Run web search</strong> if <code>web</code> is <code>on</code> / <code>auto</code> and the query looks like it needs fresh info (heuristic: explicit time/recent keywords).</li>
+    <li><strong>Build a context-aware prompt</strong>: if there's prior history, the last 3 user turns are summarized and prefixed to the current message. This ensures cheap models maintain conversational context without relying on long token histories.</li>
+    <li><strong>Run web search</strong> if <code>web</code> is <code>on</code> / <code>auto</code> and the query looks like it needs fresh info (heuristic: explicit time/recent keywords). Results are folded into the synthesis context.</li>
+    <li><strong>Analyze query complexity</strong> — lightweight classifier that detects simple vs complex queries. If the session is on the default <code>balanced</code> profile and no per-request override was provided, auto-selects <code>speed</code> for simple questions and <code>quality</code> for complex ones.</li>
     <li><strong>Pick the expert panel</strong> based on <code>profile</code> and the session's <code>preferredExperts</code> (when profile is <code>custom</code>). Provider deduplication caps each provider at <code>maxExpertsPerProvider</code> (default 2).</li>
-    <li><strong>Call the experts in parallel</strong>. Per-call timeout (default 30s). Empty / timed-out / 4xx / 5xx all produce a recorded error and don't fail the whole request.</li>
-    <li><strong>Run the judge</strong> on the successful expert responses (if any judge-eligible model + ≥2 expert answers).</li>
-    <li><strong>Run synthesis</strong> with expert answers + judge evaluation + (optional) web context. If synthesis returns empty content, the handler falls back to the first successful expert response.</li>
+    <li><strong>Call the experts in parallel</strong> with diverse perspectives (MoA-inspired). Each expert gets a slightly different role (technical, practical, analytical, educational) for more diverse responses. Per-call timeout (default 30s). Empty / timed-out / 4xx / 5xx all produce a recorded error.</li>
+    <li><strong>Race mode</strong> (speed/balanced only): proceed to synthesis once 2 experts respond successfully. Remaining in-flight calls continue in the background but are discarded. This speeds up responses by ~30–50% on average.</li>
+    <li><strong>Run the judge</strong> on the successful expert responses (if any judge-eligible model + ≥2 expert answers). The judge evaluates each response and may output confidence scores.</li>
+    <li><strong>Run synthesis</strong> with expert answers + judge evaluation + (optional) web context. If synthesis returns empty content, falls back to the first successful expert response.</li>
     <li><strong>Continuation</strong>: if synthesis returns <code>finish_reason: "length"</code>, ask the synthesis model to continue, then append. Capped by <code>FUSION_MAX_CONTINUATIONS</code> (default 1).</li>
     <li><strong>Persist</strong>: store the assistant's final answer in the session's memory.</li>
-    <li><strong>Return</strong>: <code>{ answer, telegramHtml, meta }</code>.</li>
+    <li><strong>Return</strong>: <code>{ answer, telegramHtml, meta }</code> with cost estimates and reasoning effort level.</li>
   </ol>
 
   <h3>Fallback chain</h3>
@@ -251,8 +564,90 @@ PUT    /session/:sessionId/preferredExperts
     <li>Synthesis empty/error → falls back to the first successful expert response.</li>
   </ul>
 
+  <h2 id="race-mode">Race Mode</h2>
+  <p>Race mode speeds up responses by not waiting for <em>all</em> expert models to finish. Instead, once a minimum number of successful responses are received, the pipeline immediately proceeds to synthesis.</p>
+
+  <table>
+    <tr><th>Profile</th><th>Race behavior</th><th>Default min responses</th></tr>
+    <tr><td><strong>speed</strong> / <strong>balanced</strong></td><td>Race enabled — proceed after 2 successful expert responses</td><td>2</td></tr>
+    <tr><td><strong>quality</strong> / <strong>custom</strong></td><td>Race disabled — wait for all experts</td><td>All</td></tr>
+  </table>
+
+  <p>When race mode is triggered, <code>meta.racedAhead</code> reports how many expert calls were discarded. These calls continue in the background but their results are not used for synthesis.</p>
+
+  <h2 id="query-complexity">Query Complexity Analysis</h2>
+  <p>The engine includes a lightweight classifier that analyzes each message and auto-selects a routing profile for that request — without changing the session's stored profile.</p>
+
+  <h3>Classification criteria</h3>
+  <table>
+    <tr><th>Classification</th><th>Selected profile</th><th>Triggers</th></tr>
+    <tr><td><strong>Simple</strong></td><td><code>speed</code></td><td>Factual questions: "what is", "who is", "define", "how many", "capital of", short questions with <code>?</code></td></tr>
+    <tr><td><strong>Complex</strong></td><td><code>quality</code></td><td>"explain", "how does", "compare", "analyze", "implement", code blocks (<code>```</code>), multi-sentence queries, keywords like "refactor", "debug", "architecture"</td></tr>
+    <tr><td><strong>Balanced</strong></td><td>Session default</td><td>No strong signal — uses the session's stored profile</td></tr>
+  </table>
+
+  <p>Auto-classification only applies when: (a) the session profile is <code>balanced</code> (the default), and (b) the user did not provide a per-request profile override. This keeps the system predictable while optimizing for common patterns.</p>
+
+  <h2 id="cost-estimation">Cost Estimation</h2>
+  <p>Every response includes a rough cost estimate in <code>meta.estimatedCostUsd</code>. These are order-of-magnitude estimates based on the model's speed and quality class, not exact provider billing.</p>
+
+  <h3>Per-call cost by model tier</h3>
+  <table>
+    <tr><th>Speed class</th><th>Est. cost</th><th>Quality class</th><th>Est. cost</th></tr>
+    <tr><td><code>very_fast</code></td><td>$0.00005</td><td><code>basic</code></td><td>$0.00005</td></tr>
+    <tr><td><code>fast</code></td><td>$0.0001</td><td><code>good</code></td><td>$0.0002</td></tr>
+    <tr><td><code>medium</code></td><td>$0.0005</td><td><code>strong</code></td><td>$0.001</td></tr>
+    <tr><td><code>slow</code></td><td>$0.002</td><td><code>frontier</code></td><td>$0.005</td></tr>
+    <tr><td><code>very_slow</code></td><td>$0.005</td><td><code>reasoning</code></td><td>$0.01</td></tr>
+  </table>
+
+  <p>The estimate uses the <strong>higher</strong> of the speed-based and quality-based cost for each model. Continuation calls add their own estimate. For race mode, the total includes all selected experts (even discarded ones), so it's a slight overestimate.</p>
+
   <h2 id="web-search">Web search</h2>
-  <p>When <code>web</code> is <code>on</code> or <code>auto</code>, the engine queries Tavily before answering. Results are folded into the synthesis context. Set <code>TAVILY_API_KEY</code> in <strong>Secrets → Advanced</strong> to enable.</p>
+  <p>When <code>web</code> is <code>on</code> or <code>auto</code>, the engine queries Tavily before answering. Results are folded into the synthesis context. Set <code>TAVILY_API_KEY</code> in <strong>Secrets → Advanced</strong> or use <code>/addsearchkey tavily &lt;key&gt;</code> to enable.</p>
+
+  <p>In <code>auto</code> mode, the engine heuristically decides whether to search based on query content (time-sensitive keywords, current events, recency indicators).</p>
+
+  <h2 id="external-agents">External Agents (OpenClaw, Hermes)</h2>
+  <p>Connect third-party agent frameworks — OpenClaw, Hermes, Claude Code, Cursor, or any OpenAI SDK — to the fusion pipeline via the <strong>OpenAI adapter</strong> (<code>configs/openai-adapter.mjs</code>). Or use the built-in <code>/v1/chat/completions</code> endpoint directly (see <a href="#openai-compatible">OpenAI-Compatible Endpoint</a>).</p>
+
+  <h3>Prerequisite: Start the adapter</h3>
+  <pre><code># Terminal 1: start fusion
+npm run dev
+
+# Terminal 2: start the OpenAI adapter
+node configs/openai-adapter.mjs
+
+# Adapter listens on http://localhost:3001
+# Translates OpenAI /v1/chat/completions → fusion /chat</code></pre>
+
+  <h3>OpenClaw config</h3>
+  <p>Add this provider to <code>~/.openclaw/openclaw.json</code>:</p>
+  <pre><code>{
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "free-model-fusion": {
+        "baseUrl": "http://localhost:3001/v1",
+        "apiKey": "${FUSION_LOCAL_KEY}",
+        "api": "openai-responses",
+        "models": [
+          { "id": "fusion-balanced", "name": "Fusion Balanced", "contextWindow": 32000, "maxTokens": 4096 },
+          { "id": "fusion-speed",    "name": "Fusion Speed",    "contextWindow": 32000, "maxTokens": 2048 },
+          { "id": "fusion-quality",  "name": "Fusion Quality",  "contextWindow": 64000, "maxTokens": 8192 }
+        ]
+      }
+    }
+  }
+}</code></pre>
+
+  <h3>Hermes config</h3>
+  <pre><code>model:
+  provider: custom
+  base_url: "http://localhost:3001/v1"
+  default: "fusion-balanced"
+  key_env: ""
+  context_window: 128000</code></pre>
 
   <h2 id="telegram">Telegram bot</h2>
   <h3>Setup</h3>
@@ -267,6 +662,9 @@ PUT    /session/:sessionId/preferredExperts
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_WEBHOOK_URL=https://your-host.example.com
 # Fusion auto-registers the webhook at https://your-host/telegram/webhook.</code></pre>
+
+  <h3>Commands in Telegram</h3>
+  <p>All <a href="#commands">chat commands</a> work in Telegram. The Telegram bot also responds to <code>/start</code> and <code>/help</code>.</p>
 
   <h2 id="security">Security</h2>
   <ul>
@@ -284,7 +682,7 @@ TELEGRAM_WEBHOOK_URL=https://your-host.example.com
   <p>Run <code>npm run check:models</code>. It queries each provider's live model list and compares against <code>src/providers/presets.ts</code>. The CI workflow <code>.github/workflows/model-freshness.yml</code> runs the same check weekly + on PRs that touch presets.</p>
 
   <h3>"None of the available AI models responded successfully"</h3>
-  <p>Check the per-model errors in <code>meta.errors</code> — most often a 401 (bad key) or 429 (rate-limited).</p>
+  <p>Check the per-model errors in <code>meta.errors</code> — most often a 401 (bad key) or 429 (rate-limited). Use <code>/listkeys</code> to verify your keys, and <code>/providers</code> to check which providers are enabled.</p>
 
   <h3>Telegram bot replies but doesn't get my messages</h3>
   <ol>
@@ -295,6 +693,12 @@ TELEGRAM_WEBHOOK_URL=https://your-host.example.com
 
   <h3>Token-budget changes in Settings don't take effect</h3>
   <p>They do, immediately. The values are saved to the DB <em>and</em> applied to <code>config.expertMaxTokens</code> on the next chat request (verified by <code>tests/settingsLive.test.ts</code>).</p>
+
+  <h3>Web search keeps saying "API key not configured"</h3>
+  <p>Use <code>/addsearchkey tavily &lt;key&gt;</code> or set <code>TAVILY_API_KEY</code> in <strong>Secrets → Advanced</strong>. Get a free key at <a href="https://tavily.com">tavily.com</a>.</p>
+
+  <h3>"reasoning_effort is not supported" error</h3>
+  <p>The <code>reasoning_effort</code> parameter is only sent to providers that support it (currently OpenRouter). If you're using a different provider that rejects unknown parameters, the error is caught and handled. Switch to OpenRouter for reasoning effort support, or set <code>/reasoning medium</code> to use the default.</p>
 
   <h2 id="deploy">Deploy</h2>
   <h3>Docker</h3>
@@ -321,19 +725,58 @@ FUSION_SECRET_KEY=$(openssl rand -hex 32) \
     <tr><td><code>FUSION_SECRET_KEY</code></td><td>≥32-char key for encrypting DB keys</td><td><span class="tag tag-yellow">prod</span></td></tr>
     <tr><td><code>FUSION_DEFAULT_PROFILE</code></td><td><code>speed|balanced|quality|custom</code></td><td>no</td></tr>
     <tr><td><code>FUSION_MAX_EXPERTS</code></td><td>Max models in the expert panel (default 4)</td><td>no</td></tr>
-    <tr><td><code>FUSION_EXPERT_MAX_TOKENS</code></td><td>Per-expert max output (default 2500)</td><td>no</td></tr>
-    <tr><td><code>FUSION_JUDGE_MAX_TOKENS</code></td><td>(default 1800)</td><td>no</td></tr>
-    <tr><td><code>FUSION_SYNTHESIS_MAX_TOKENS</code></td><td>(default 5000)</td><td>no</td></tr>
-    <tr><td><code>FUSION_CONTINUATION_MAX_TOKENS</code></td><td>(default 2500)</td><td>no</td></tr>
+    <tr><td><code>FUSION_MAX_EXPERTS_PER_PROVIDER</code></td><td>Max models per single provider (default 2)</td><td>no</td></tr>
+    <tr><td><code>FUSION_EXPERT_MAX_TOKENS</code></td><td>Per-expert max output (default 7500)</td><td>no</td></tr>
+    <tr><td><code>FUSION_JUDGE_MAX_TOKENS</code></td><td>Judge max tokens (default 5400)</td><td>no</td></tr>
+    <tr><td><code>FUSION_SYNTHESIS_MAX_TOKENS</code></td><td>Synthesis max tokens (default 15000)</td><td>no</td></tr>
+    <tr><td><code>FUSION_CONTINUATION_MAX_TOKENS</code></td><td>Continuation max tokens (default 7500)</td><td>no</td></tr>
     <tr><td><code>FUSION_ENABLE_CONTINUATION</code></td><td><code>true</code> (default) / <code>false</code></td><td>no</td></tr>
+    <tr><td><code>FUSION_MAX_CONTINUATIONS</code></td><td>Max continuation rounds (default 1)</td><td>no</td></tr>
     <tr><td><code>FUSION_HISTORY_MESSAGES</code></td><td>Max prior messages fed back (default 12)</td><td>no</td></tr>
     <tr><td><code>FUSION_HISTORY_CHARS</code></td><td>Char budget for history (default 12000)</td><td>no</td></tr>
     <tr><td><code>FUSION_WEB_MAX_RESULTS</code></td><td>Tavily results per search (default 5)</td><td>no</td></tr>
+    <tr><td><code>FUSION_WEB_CONTEXT_CHARS</code></td><td>Char budget for web context (default 8000)</td><td>no</td></tr>
+    <tr><td><code>FUSION_ALLOW_PRIVATE_ENDPOINTS</code></td><td>Allow http/localhost endpoints (dev only)</td><td>no</td></tr>
     <tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Telegram bot token</td><td>no</td></tr>
     <tr><td><code>TELEGRAM_WEBHOOK_URL</code></td><td>Public webhook URL (otherwise polling)</td><td>no</td></tr>
-    <tr><td><code>TAVILY_API_KEY</code></td><td>Web search</td><td>no</td></tr>
-    <tr><td><code>OPENROUTER_API_KEY</code> / <code>GROQ_API_KEY</code> / <code>GEMINI_API_KEY</code> / etc.</td><td>Provider API keys</td><td>need ≥1</td></tr>
+    <tr><td><code>TELEGRAM_CHUNK_SIZE</code></td><td>Telegram message chunk size (default 3600)</td><td>no</td></tr>
+    <tr><td><code>TAVILY_API_KEY</code></td><td>Web search via Tavily</td><td>no</td></tr>
     <tr><td><code>CORS_ORIGIN</code></td><td>Allowed origin (default <code>*</code>; lock down in prod)</td><td>no</td></tr>
+    <tr><td><code>NODE_ENV</code></td><td><code>development</code> or <code>production</code></td><td>no</td></tr>
+    <tr><td><code>OPENROUTER_API_KEY</code></td><td>OpenRouter API key</td><td>need ≥1</td></tr>
+    <tr><td><code>GROQ_API_KEY</code></td><td>Groq Cloud API key</td><td>need ≥1</td></tr>
+    <tr><td><code>GEMINI_API_KEY</code></td><td>Google Gemini API key</td><td>need ≥1</td></tr>
+    <tr><td><code>CEREBRAS_API_KEY</code></td><td>Cerebras API key</td><td>need ≥1</td></tr>
+    <tr><td><code>TOGETHER_API_KEY</code></td><td>Together AI API key</td><td>no</td></tr>
+    <tr><td><code>FIREWORKS_API_KEY</code></td><td>Fireworks AI API key</td><td>no</td></tr>
+    <tr><td><code>DEEPINFRA_API_KEY</code></td><td>DeepInfra API key</td><td>no</td></tr>
+    <tr><td><code>NOVITA_API_KEY</code></td><td>Novita AI API key</td><td>no</td></tr>
+    <tr><td><code>NVIDIA_NIM_API_KEY</code></td><td>NVIDIA NIM API key</td><td>no</td></tr>
+    <tr><td><code>HYPERBOLIC_API_KEY</code></td><td>Hyperbolic API key</td><td>no</td></tr>
+    <tr><td><code>SAMBANOVA_API_KEY</code></td><td>SambaNova API key</td><td>no</td></tr>
+    <tr><td><code>PERPLEXITY_API_KEY</code></td><td>Perplexity API key</td><td>no</td></tr>
+    <tr><td><code>NEBIUS_API_KEY</code></td><td>Nebius AI API key</td><td>no</td></tr>
+  </table>
+
+  <h3>Supported Providers</h3>
+  <table>
+    <tr><th>Provider</th><th>Speed</th><th>Quality</th><th>Free Tier</th><th>Models</th></tr>
+    <tr><td>Groq</td><td>⚡ very_fast</td><td>Good</td><td>✅ Free</td><td>Llama 3.1 8B, Llama 3.3 70B, GPT-OSS 120B, Llama 4 Scout</td></tr>
+    <tr><td>Cerebras</td><td>⚡ very_fast</td><td>Good</td><td>✅ Free</td><td>GPT-OSS 120B</td></tr>
+    <tr><td>Gemini</td><td>⚡ fast</td><td>Strong</td><td>✅ Free</td><td>Gemini 2.5 Flash, Gemini 2.5 Pro</td></tr>
+    <tr><td>OpenRouter</td><td>⚡ fast</td><td>Frontier</td><td>✅ Free models</td><td>GPT-4o Mini, Claude 3 Haiku, DeepSeek V3</td></tr>
+    <tr><td>SambaNova</td><td>⚡ fast</td><td>Good</td><td>✅ Free</td><td>Various open models</td></tr>
+    <tr><td>Together</td><td>⚡ fast</td><td>Strong</td><td>💲 Pay-as-you-go</td><td>Llama 3 70B, Mixtral 8x22B</td></tr>
+    <tr><td>Fireworks</td><td>⚡ fast</td><td>Strong</td><td>💲 Pay-as-you-go</td><td>Llama 3 70B</td></tr>
+    <tr><td>DeepInfra</td><td>⚡ fast</td><td>Good</td><td>💲 Pay-as-you-go</td><td>Llama 3.3 70B Turbo</td></tr>
+    <tr><td>Novita</td><td>⚡ fast</td><td>Good</td><td>💲 Cheap</td><td>Various models</td></tr>
+    <tr><td>Hyperbolic</td><td>🐢 medium</td><td>Good</td><td>💲 Pay-as-you-go</td><td>Various models</td></tr>
+    <tr><td>Perplexity</td><td>🐢 medium</td><td>Strong</td><td>💲 Pay-as-you-go</td><td>Sonar, Sonar Pro</td></tr>
+    <tr><td>Nebius</td><td>🐢 medium</td><td>Strong</td><td>💲 Pay-as-you-go</td><td>Various models</td></tr>
+    <tr><td>Replicate</td><td>🐢 medium</td><td>Good</td><td>💲 Pay-as-you-go</td><td>Various models</td></tr>
+    <tr><td>Lambda Labs</td><td>🐢 medium</td><td>Strong</td><td>💲 Pay-as-you-go</td><td>Various models</td></tr>
+    <tr><td>NVIDIA NIM</td><td>🐢 slow</td><td>Frontier</td><td>💲 Pay-as-you-go</td><td>Llama 3.1 405B</td></tr>
+    <tr><td>Custom</td><td>Configurable</td><td>Configurable</td><td>You choose</td><td>Bring your own</td></tr>
   </table>
 
   <footer>

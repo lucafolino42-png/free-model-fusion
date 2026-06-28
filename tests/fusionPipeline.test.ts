@@ -111,6 +111,8 @@ describe('fusion pipeline (mocked fetch)', () => {
     // is the expert call; the synthesis reuses it too. We truncate whichever
     // call returns the synthesis content by counting calls to that model and
     // truncating the LAST one (synthesis runs after experts).
+    //
+    // Note: query must NOT match complexity keywords so profile stays 'balanced'.
     const synthModel = GROQ_EXPERT; // experts[0] doubles as synthesis
     let callsToSynthModel = 0;
     let totalCalls = 0;
@@ -143,7 +145,7 @@ describe('fusion pipeline (mocked fetch)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await handleFusionCommand('Write a long essay', {
+    const result = await handleFusionCommand('Draft a long essay', {
       sessionId: 'pipe-trunc',
       source: 'api',
     });
@@ -186,7 +188,7 @@ describe('fusion pipeline (mocked fetch)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await handleFusionCommand('Write something', {
+    const result = await handleFusionCommand('Draft something', {
       sessionId: 'pipe-empty-continuation',
       source: 'api',
     });
@@ -229,7 +231,7 @@ describe('fusion pipeline (mocked fetch)', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await handleFusionCommand('Explain recursion', {
+    const result = await handleFusionCommand('Tell me recursion', {
       sessionId: 'pipe-empty-judge',
       source: 'api',
     });
@@ -264,7 +266,8 @@ describe('fusion pipeline (mocked fetch)', () => {
     seenBodies.length = 0;
 
     // Turn 2: a follow-up that should see turn 1's history in its messages.
-    await handleFusionCommand('What is my name?', { sessionId: 'pipe-memory', source: 'api' });
+    // Query must NOT trigger complexity analysis ("what is" matches SIMPLE_INDICATORS).
+    await handleFusionCommand('Do you recall my name?', { sessionId: 'pipe-memory', source: 'api' });
 
     expect(fetchMock.mock.calls.length).toBeGreaterThan(firstCallCount);
     // At least one model call in turn 2 must include the prior user message
@@ -289,19 +292,19 @@ describe('fusion pipeline (mocked fetch)', () => {
       // question directly and concisely"; judge/synthesis use different
       // prompts. Identify experts by this distinctive opener.
       const sys = msgs.find((m) => m.role === 'system');
-      return sys?.content.includes('Answer this question directly');
+      return sys?.content.includes('Answer the user') && !sys?.content.includes('You are evaluating');
     });
     expect(expertCalls.length).toBeGreaterThan(0);
     for (const b of expertCalls) {
       const msgs = b.messages as Array<{ role: string; content: string }>;
       const userTurns = msgs.filter((m) => m.role === 'user');
       const containsCurrentQuestion = userTurns.some((m) =>
-        m.content.includes('What is my name?')
+        m.content.includes('Do you recall my name?')
       );
       expect(containsCurrentQuestion).toBe(true);
       // The bare current question must not appear verbatim twice (i.e. it
       // is not duplicated in both history and the final user turn).
-      const bareCount = userTurns.filter((m) => m.content === 'What is my name?').length;
+      const bareCount = userTurns.filter((m) => m.content === 'Do you recall my name?').length;
       expect(bareCount).toBeLessThanOrEqual(1);
     }
   });

@@ -63,6 +63,19 @@ a{color:var(--accent);text-decoration:none}
 .nav-item .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
 .nav-item .badge{margin-left:auto;font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--text-muted)}
 
+/* ── Sessions list in sidebar ─────────────────────── */
+.sidebar-section-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;padding:12px 12px 4px}
+.sessions-list{flex:0 1 auto;overflow-y:auto;max-height:30vh;padding:2px 8px 8px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.session-item{display:flex;align-items:flex-start;gap:6px;padding:7px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all .12s;border:none;background:none;width:100%;text-align:left;color:var(--text-secondary);font-family:var(--font-sans);font-size:12px;line-height:1.3}
+.session-item:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+.session-item.active{background:rgba(129,140,248,.12);color:var(--accent)}
+.session-item .sess-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.session-item .sess-info{min-width:0;flex:1}
+.session-item .sess-id{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-item .sess-preview{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.session-item .sess-meta{font-size:10px;color:var(--text-muted);display:flex;gap:6px;margin-top:1px}
+.session-item .sess-meta .tag{font-size:9px;padding:0 4px}
+
 .main{flex:1;display:flex;flex-direction:column;min-width:0}
 .header{height:var(--header-height);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;background:var(--bg-secondary);flex-shrink:0;position:relative;z-index:20}
 .header-title{font-size:15px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:8px}
@@ -135,6 +148,16 @@ textarea.input{resize:vertical;min-height:80px;font-family:var(--font-mono);font
 .chat-input-area{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border)}
 .chat-input-area .input{flex:1}
 .chat-input-area .btn{padding:9px 20px}
+
+/* ── Autocomplete dropdown ──────────────────────────── */
+.autocomplete-wrap{position:relative;flex:1;min-width:0}
+.autocomplete-dropdown{position:absolute;bottom:calc(100% + 4px);left:0;right:0;max-height:260px;overflow-y:auto;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 -4px 24px rgba(0,0,0,.4);z-index:50;display:none;padding:4px}
+.autocomplete-dropdown.open{display:block}
+.ac-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;transition:all .1s;color:var(--text-secondary)}
+.ac-item:hover,.ac-item.highlighted{background:rgba(129,140,248,.12);color:var(--text-primary)}
+.ac-item .ac-cmd{font-family:var(--font-mono);font-weight:600;color:var(--accent);font-size:12px;flex-shrink:0}
+.ac-item .ac-desc{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.ac-item .ac-cat{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--bg-input);color:var(--text-muted);text-transform:uppercase;flex-shrink:0}
 .typing-indicator{display:flex;align-items:center;gap:4px;padding:12px 16px;align-self:flex-start;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);border-bottom-left-radius:4px}
 .typing-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);animation:typingBounce 1.4s infinite}
 .typing-dot:nth-child(2){animation-delay:.2s}
@@ -174,6 +197,50 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
 .modal h3{font-size:16px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .modal .form-actions{margin-top:16px;justify-content:flex-end}
 
+/* ── Wizard ──────────────────────────────────────────── */
+.wizard-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:wizFade .3s ease}
+.wizard-overlay.open{display:flex}
+@keyframes wizFade{from{opacity:0}to{opacity:1}}
+.wizard{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;max-width:580px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative}
+.wizard-close{position:absolute;top:12px;right:16px;background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;transition:color .15s}
+.wizard-close:hover{color:var(--text-primary)}
+.wizard-progress{display:flex;gap:6px;margin-bottom:24px;justify-content:center}
+.wiz-dot{width:10px;height:10px;border-radius:50%;background:var(--bg-input);transition:all .3s;cursor:pointer;border:2px solid transparent}
+.wiz-dot.active{background:var(--accent);border-color:rgba(129,140,248,.3);box-shadow:0 0 8px rgba(129,140,248,.3)}
+.wiz-dot.done{background:var(--green)}
+.wiz-step{display:none;animation:wizSlide .35s ease}
+.wiz-step.active{display:block}
+@keyframes wizSlide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.wiz-icon{font-size:48px;margin-bottom:12px;text-align:center}
+.wiz-title{font-size:22px;font-weight:700;text-align:center;margin-bottom:6px;color:var(--text-primary)}
+.wiz-desc{font-size:14px;color:var(--text-secondary);text-align:center;margin-bottom:24px;line-height:1.6}
+.wiz-body{margin-bottom:24px}
+.wiz-actions{display:flex;gap:10px;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:20px}
+.wiz-actions .left{display:flex;gap:8px}
+.wiz-actions .right{display:flex;gap:8px}
+.wiz-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;border:none;font-family:var(--font-sans)}
+.wiz-btn-primary{background:var(--accent);color:#fff}
+.wiz-btn-primary:hover{background:var(--accent-hover)}
+.wiz-btn-secondary{background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border)}
+.wiz-btn-secondary:hover{background:var(--bg-card-hover)}
+.wiz-btn-skip{background:transparent;color:var(--text-muted);padding:10px 12px}
+.wiz-btn-skip:hover{color:var(--text-secondary)}
+.wiz-card{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s;margin-bottom:8px}
+.wiz-card:hover{border-color:rgba(255,255,255,.15);background:var(--bg-card-hover)}
+.wiz-card.selected{border-color:var(--accent);background:rgba(129,140,248,.08)}
+.wiz-card-icon{font-size:28px;flex-shrink:0}
+.wiz-card-text{flex:1;min-width:0}
+.wiz-card-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+.wiz-card-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.wiz-input-group{margin-bottom:14px}
+.wiz-input-group label{display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px}
+.wiz-success{text-align:center;padding:16px}
+.wiz-success .check{font-size:56px;margin-bottom:12px}
+.wiz-checklist{margin:16px 0;padding:0;list-style:none}
+.wiz-checklist li{display:flex;align-items:center;gap:10px;padding:8px 12px;font-size:13px;color:var(--text-secondary);border-radius:6px;margin-bottom:4px}
+.wiz-checklist li.done{color:var(--text-primary);background:rgba(74,222,128,.06)}
+.wiz-checklist li .check-icon{font-size:16px;width:20px;text-align:center}
+
 /* ── Env editor ─────────────────────────────────────── */
 .env-grid{display:grid;grid-template-columns:1fr;gap:8px}
 .env-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);transition:all .15s}
@@ -200,6 +267,13 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
 @media(max-width:480px){
   .stats{grid-template-columns:1fr}
 }
+
+/
+/* ─
+/* ── Provider Accordion (Model Groups) ────────────── */
+.prov-group{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:border-color .2s}
+.prov-group:hover{border-color:rgba(255,255,255,.12)}.prov-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:var(--bg-card);border:none;width:100%;text-align:left;color:var(--text-primary);font-size:14px;font-weight:600;transition:background .15s}.prov-header:hover{background:var(--bg-card-hover)}.prov-header .arrow{font-size:12px;transition:transform .2s;color:var(--text-muted);flex-shrink:0;width:16px;text-align:center}.prov-header.open .arrow{transform:rotate(90deg)}.prov-header .prov-label{flex:1;min-width:0}.prov-header .prov-count{font-size:11px;font-weight:400;color:var(--text-muted);background:var(--bg-input);padding:2px 8px;border-radius:999px}.prov-header .prov-discover{font-size:11px;padding:3px 10px;border-radius:var(--radius-sm);background:rgba(129,140,248,.12);color:var(--accent);border:none;cursor:pointer;transition:all .15s;font-weight:500}.prov-header .prov-discover:hover{background:rgba(129,140,248,.2)}.prov-header .prov-discover:disabled{opacity:.5;cursor:wait}.prov-body{display:none;border-top:1px solid var(--border);padding:4px 0;background:rgba(0,0,0,.15)}.prov-body.open{display:block}.prov-body .model-item{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:13px}.prov-body .model-item:hover{background:var(--bg-card-hover)}.prov-body .model-item .m-status{font-size:12px;width:18px;text-align:center}.prov-body .model-item .m-key{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--accent);min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.prov-body .model-item .m-meta{font-size:11px;color:var(--text-muted);display:flex;gap:8px;flex-shrink:0}.prov-body .model-item .m-meta .m-tag{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--bg-input);color:var(--text-muted)}.prov-body .model-item .m-actions{flex-shrink:0}.prov-group-empty{padding:20px;text-align:center;color:var(--text-muted);font-size:13px}
+
 </style>
 </head>
 <body>
@@ -242,6 +316,13 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
       <button class="nav-item" data-view="memory" onclick="switchView('memory')">
         <span class="icon" aria-hidden="true">💾</span> Memory
       </button>
+      <button class="nav-item" data-view="wizard" onclick="openWizard()" title="Setup wizard">
+        <span class="icon" aria-hidden="true">🚀</span> Setup Wizard
+      </button>
+      <div class="sidebar-section-label">Past Sessions</div>
+      <div class="sessions-list" id="sessionsList">
+        <div style="padding:9px 12px;font-size:12px;color:var(--text-muted)">Loading...</div>
+      </div>
       <a class="nav-item" href="/docs" target="_blank" rel="noopener" style="margin-top:auto;color:var(--text-secondary)">
         <span class="icon" aria-hidden="true">📖</span> Docs ↗
       </a>
@@ -278,11 +359,12 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
               <option value="quality">Quality</option>
               <option value="custom">Custom</option>
             </select>
-            <select class="input" id="chatWeb" style="max-width:100px">
+            <select class="input" id="chatWeb" style="max-width:100px" onchange="onChatWebChange()">
               <option value="off">Web: Off</option>
               <option value="auto">Web: Auto</option>
               <option value="on">Web: On</option>
             </select>
+            <div id="chatWebWarning" style="display:none;font-size:11px;color:var(--yellow);padding:4px 8px;background:rgba(251,191,36,.08);border-radius:4px;white-space:nowrap">⚠️ No Tavily key</div>
             <button class="btn btn-sm btn-secondary" onclick="clearChat()">Clear</button>
           </div>
           <div class="chat-messages" id="chatMessages">
@@ -291,7 +373,10 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
             </div>
           </div>
           <div class="chat-input-area">
-            <input class="input" id="chatInput" placeholder="Type a message or command (/help, /providers, /models...)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}">
+            <div class="autocomplete-wrap">
+              <input class="input" id="chatInput" placeholder="Type a message or command (/help, /providers, /models...)" autocomplete="off" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()};onChatKey(event)" oninput="onChatInput()" onblur="setTimeout(closeAutocomplete,150)" onfocus="onChatInput()">
+              <div class="autocomplete-dropdown" id="acDropdown"></div>
+            </div>
             <button class="btn btn-primary" onclick="sendChat()">Send</button>
           </div>
         </div>
@@ -336,7 +421,7 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
       <!-- ===== MODELS VIEW ===== -->
       <div class="view" id="view-models">
         <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:12px;padding:10px 14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);border-radius:8px">
-          <strong>Models</strong> are the individual AI configurations the fusion engine can call. Built-in presets come from the active provider list; <strong>Add Model</strong> registers a custom one (useful for self-hosted endpoints or new models a preset provider releases). After adding, build a custom model set in <strong>Settings → Custom Model Combinations</strong>.
+          <strong>Models</strong> are the individual AI configurations the fusion engine can call. Built-in presets come from the active provider list; <strong>Add Model</strong> registers a custom one (useful for self-hosted endpoints or new models a preset provider releases). Models are grouped by provider — click a provider to expand and see its models. Use <strong>Discover</strong> to auto-fetch all models from a provider's API.
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
           <h2 style="font-size:20px;font-weight:600">🤖 Models</h2>
@@ -345,7 +430,7 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
         <div class="card">
           <div class="table-wrap"><table><thead><tr>
             <th>Status</th><th>Key</th><th>Title</th><th>Provider</th><th>Model ID</th><th>Use As</th><th>Speed</th><th>Quality</th><th>Key</th><th>Actions</th>
-          </tr></thead><tbody id="modelsTable"><tr><td colspan="10" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></tbody></table></div>
+          </tr></thead><tbody id="modelsAccordion" style="margin-bottom:16px"><div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">Loading models...</div></div>
         </div>
       </div>
 
@@ -405,6 +490,9 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
               </select>
               <div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.5">
                 <strong>off</strong>: never search; <strong>auto</strong>: search when the user asks about current events, recent releases, or anything that benefits from fresh info; <strong>on</strong>: always run a web search before answering (uses the configured TAVILY_API_KEY). You can override per-request via <code style="font-family:var(--font-mono)">{"web":"on"}</code> in the API body.
+              </div>
+              <div id="tavilyWarning" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);border-radius:6px;font-size:12px;color:var(--yellow);line-height:1.5">
+                ⚠️ <strong>Tavily API key not configured.</strong> Web search is enabled but will fail until you set one. Add it in <strong>Secrets</strong> → Provider API Keys or use <code style="font-family:var(--font-mono);font-size:11px">/addsearchkey tavily &lt;key&gt;</code> in chat.
               </div>
             </div>
           </div>
@@ -614,6 +702,202 @@ code.mono{font-family:var(--font-mono);font-size:12px;color:var(--accent)}
   </div>
 </div>
 
+<!-- ===== ONBOARDING WIZARD ===== -->
+<div class="wizard-overlay" id="wizardOverlay">
+  <div class="wizard">
+    <button class="wizard-close" onclick="closeWizard()" aria-label="Close wizard">✕</button>
+
+    <!-- Progress dots -->
+    <div class="wizard-progress" id="wizardProgress"></div>
+
+    <!-- Step 1: Welcome -->
+    <div class="wiz-step" id="wizStep0">
+      <div class="wiz-icon">🚀</div>
+      <div class="wiz-title">Welcome to Free Model Fusion</div>
+      <div class="wiz-desc">
+        Turn your free AI API keys into a smarter multi-model assistant.
+        This quick wizard will get you up and running in about 2 minutes.
+      </div>
+      <div class="wiz-body" style="text-align:center;padding:8px 0">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left">
+          <div style="padding:12px;background:var(--bg-card);border-radius:var(--radius-sm)">
+            <div style="font-size:20px;margin-bottom:4px">🔑</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary)">Add API Keys</div>
+            <div style="font-size:11px;color:var(--text-muted)">Connect free AI providers</div>
+          </div>
+          <div style="padding:12px;background:var(--bg-card);border-radius:var(--radius-sm)">
+            <div style="font-size:20px;margin-bottom:4px">⚡</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary)">Choose Profile</div>
+            <div style="font-size:11px;color:var(--text-muted)">Speed vs quality balance</div>
+          </div>
+          <div style="padding:12px;background:var(--bg-card);border-radius:var(--radius-sm)">
+            <div style="font-size:20px;margin-bottom:4px">🌐</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary)">Web Search</div>
+            <div style="font-size:11px;color:var(--text-muted)">Enable real-time answers</div>
+          </div>
+          <div style="padding:12px;background:var(--bg-card);border-radius:var(--radius-sm)">
+            <div style="font-size:20px;margin-bottom:4px">💬</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-primary)">Start Chatting</div>
+            <div style="font-size:11px;color:var(--text-muted)">Ask anything, instantly</div>
+          </div>
+        </div>
+      </div>
+      <div class="wiz-actions">
+        <div class="left">
+          <button class="wiz-btn wiz-btn-skip" onclick="closeWizard()">Skip setup</button>
+        </div>
+        <div class="right">
+          <button class="wiz-btn wiz-btn-primary" onclick="wizNext()">Get Started →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Add API Key -->
+    <div class="wiz-step" id="wizStep1">
+      <div class="wiz-icon">🔑</div>
+      <div class="wiz-title">Add Your First API Key</div>
+      <div class="wiz-desc">
+        Free Model Fusion works with multiple free and paid AI providers.
+        Start by adding a key from one of them.
+      </div>
+      <div class="wiz-body">
+        <div class="wiz-input-group">
+          <label>Provider</label>
+          <select class="input" id="wizProvider">
+            <option value="groq">Groq Cloud — Free tier available</option>
+            <option value="gemini">Google Gemini — Free tier available</option>
+            <option value="openrouter">OpenRouter — Credit-based, many models</option>
+            <option value="cerebras">Cerebras — Fast inference, free tier</option>
+          </select>
+        </div>
+        <div class="wiz-input-group">
+          <label>API Key</label>
+          <input class="input" id="wizApiKey" type="password" placeholder="Paste your API key here...">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+            Your key is stored encrypted. <a href="#" onclick="wizOpenProviderUrl();return false" style="color:var(--accent)">Get a free key →</a>
+          </div>
+        </div>
+        <div id="wizKeyStatus" style="font-size:12px;margin-top:8px;padding:8px;border-radius:6px;display:none"></div>
+      </div>
+      <div class="wiz-actions">
+        <div class="left">
+          <button class="wiz-btn wiz-btn-secondary" onclick="wizPrev()">← Back</button>
+          <button class="wiz-btn wiz-btn-skip" onclick="wizSkip()">Skip this step</button>
+        </div>
+        <div class="right">
+          <button class="wiz-btn wiz-btn-primary" onclick="wizSaveKey()">Save &amp; Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Choose Profile -->
+    <div class="wiz-step" id="wizStep2">
+      <div class="wiz-icon">⚡</div>
+      <div class="wiz-title">Choose Your Profile</div>
+      <div class="wiz-desc">
+        Control how your AI models are selected. You can change this anytime.
+      </div>
+      <div class="wiz-body">
+        <div class="wiz-card" onclick="wizSelectProfile('speed',this)">
+          <div class="wiz-card-icon">🚀</div>
+          <div class="wiz-card-text">
+            <div class="wiz-card-title">Speed — Fastest responses</div>
+            <div class="wiz-card-sub">Best for quick answers, simple tasks, and high throughput. Uses lightweight models.</div>
+          </div>
+        </div>
+        <div class="wiz-card selected" onclick="wizSelectProfile('balanced',this)">
+          <div class="wiz-card-icon">⚖️</div>
+          <div class="wiz-card-text">
+            <div class="wiz-card-title">Balanced (Default)</div>
+            <div class="wiz-card-sub">Good mix of speed and quality. Best for everyday use. Recommended for most users.</div>
+          </div>
+        </div>
+        <div class="wiz-card" onclick="wizSelectProfile('quality',this)">
+            <div class="wiz-card-icon">🎯</div>
+          <div class="wiz-card-text">
+            <div class="wiz-card-title">Quality — Deep reasoning</div>
+            <div class="wiz-card-sub">Uses the most capable models for complex analysis, coding, and research tasks.</div>
+          </div>
+        </div>
+      </div>
+      <div class="wiz-actions">
+        <div class="left">
+          <button class="wiz-btn wiz-btn-secondary" onclick="wizPrev()">← Back</button>
+        </div>
+        <div class="right">
+          <button class="wiz-btn wiz-btn-primary" onclick="wizNext()">Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Web Search -->
+    <div class="wiz-step" id="wizStep3">
+      <div class="wiz-icon">🌐</div>
+      <div class="wiz-title">Web Search (Optional)</div>
+      <div class="wiz-desc">
+        Enable real-time web search so your AI can answer questions about current events, recent news, and fresh data.
+      </div>
+      <div class="wiz-body">
+        <div class="wiz-input-group">
+          <label>Tavily API Key</label>
+          <input class="input" id="wizTavilyKey" type="password" placeholder="Paste your Tavily API key (optional)">
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+            Web search requires a free Tavily key. <a href="https://tavily.com" target="_blank" rel="noopener" style="color:var(--accent)">Get one free →</a>
+            <br>Without it, web search will be unavailable. You can set this up later.
+          </div>
+        </div>
+        <div class="wiz-input-group">
+          <label>Default Web Mode</label>
+          <select class="input" id="wizWebMode">
+            <option value="auto">Auto — Search when needed (recommended)</option>
+            <option value="off">Off — Never search the web</option>
+            <option value="on">On — Always search before answering</option>
+          </select>
+        </div>
+        <div id="wizWebStatus" style="font-size:12px;margin-top:8px;padding:8px;border-radius:6px;display:none"></div>
+      </div>
+      <div class="wiz-actions">
+        <div class="left">
+          <button class="wiz-btn wiz-btn-secondary" onclick="wizPrev()">← Back</button>
+          <button class="wiz-btn wiz-btn-skip" onclick="wizSkip()">Skip this step</button>
+        </div>
+        <div class="right">
+          <button class="wiz-btn wiz-btn-primary" onclick="wizSaveWeb()">Save &amp; Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Done -->
+    <div class="wiz-step" id="wizStep4">
+      <div class="wiz-success">
+        <div class="check">🎉</div>
+      </div>
+      <div class="wiz-title">You're All Set!</div>
+      <div class="wiz-desc">
+        Your Free Model Fusion instance is ready. Here's a summary of your setup:
+      </div>
+      <div class="wiz-body">
+        <ul class="wiz-checklist" id="wizChecklist">
+          <li id="wizCheck0"><span class="check-icon">⬜</span> API key configured</li>
+          <li id="wizCheck1"><span class="check-icon">⬜</span> Profile selected</li>
+          <li id="wizCheck2"><span class="check-icon">⬜</span> Web search configured</li>
+          <li style="color:var(--text-muted);font-size:12px;padding-top:12px">
+            💡 Tip: Use /help in chat to see all commands. Visit <strong>Settings</strong> to customize further.
+          </li>
+        </ul>
+      </div>
+      <div class="wiz-actions">
+        <div class="left">
+          <button class="wiz-btn wiz-btn-secondary" onclick="wizPrev()">← Back</button>
+        </div>
+        <div class="right">
+          <button class="wiz-btn wiz-btn-primary" onclick="finishWizard()">Start Chatting 💬</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✓</span><span id="toastText"></span></div>
 
@@ -661,9 +945,60 @@ function switchView(view){
   if(view==='keys')refreshKeys();
   if(view==='settings')refreshSettings();
   if(view==='env')refreshEnvVars();
+  if(view==='chat')refreshSessions();
 }
 
 // ── Health Check ───────────────────────────────────────
+async function wizSaveKey(){
+  var provider = document.getElementById("wizProvider").value;
+  var key = document.getElementById("wizApiKey").value.trim();
+  var status = document.getElementById("wizKeyStatus");
+  if(!key){
+    status.style.display = "block";
+    status.style.background = "rgba(251,191,36,.1)";
+    status.style.color = "var(--yellow)";
+    status.textContent = "No key entered. You can skip this step and add one later.";
+    wizNext();
+    return;
+  }
+  try{
+    // If overwrite was already confirmed on a previous click, skip check and save
+    if(window._wizOverwrite){
+      delete window._wizOverwrite;
+    } else {
+      // Check if a credential is already registered for this provider
+      try{
+        var kr = await api("/keys");
+        var kd = await kr.json();
+        if((kd.keys||[]).some(function(k){ return k.providerId === provider; })){
+          status.style.display = "block";
+          status.style.background = "rgba(251,191,36,.1)";
+          status.style.color = "var(--yellow)";
+          status.innerHTML = "⚠️ <strong>This credential is already registered.</strong> Click <strong>Save &amp; Continue</strong> again to overwrite.";
+          window._wizOverwrite = true;
+          return;
+        }
+      }catch(e){ /* ignore - proceed with save */ }
+    }
+    var r = await api("/keys", {method:"POST", body:JSON.stringify({providerId: provider, apiKey: key})});
+    var d = await r.json();
+    if(!r.ok){ throw new Error(d.error || "Failed") }
+    WIZARD_COMPLETED_STEPS.key = true;
+    status.style.display = "block";
+    status.style.background = "rgba(74,222,128,.1)";
+    status.style.color = "var(--green)";
+    status.innerHTML = "Key saved for "+esc(provider)+"!";
+    document.getElementById("wizApiKey").value = "";
+    refreshKeys();
+    setTimeout(function(){ status.style.display = "none"; wizNext(); }, 1000);
+  }catch(e){
+    status.style.display = "block";
+    status.style.background = "rgba(248,113,113,.1)";
+    status.style.color = "var(--red)";
+    status.innerHTML = "Error: "+esc(e.message);
+  }
+}
+
 async function checkHealth(){
   try{
     const r=await api('/health');const d=await r.json();
@@ -771,29 +1106,100 @@ async function deleteProvider(id){
 function openAddProviderModal(){$('modalProvId').value='';$('modalProvLabel').value='';$('modalProvEndpoint').value='';$('modalProvSpeed').value='medium';$('modalProvQual').value='good';$('modalProvTokens').value='8192';openModal('addProviderModal')}
 
 // ── Models ─────────────────────────────────────────────
+// ── Models ─────────────────────────────────────────────
 async function refreshModels(){
   try{
-    const r=await api('/models');const d=await r.json();
-    const t=$('modelsTable');
-    if(!d.models||d.models.length===0){t.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text-muted)">No models configured.</td></tr>';return}
-    t.innerHTML=d.models.map(m=>{
-      const en=m.enabled?'✅':'❌';
-      const key=m.hasCredential?'🔑':'❌';
-      return '<tr>'+
-        '<td>'+en+'</td>'+
-        '<td><code class="mono">'+esc(m.id)+'</code></td>'+
-        '<td>'+esc(m.title)+'</td>'+
-        '<td><code class="key">'+esc(m.providerId)+'</code></td>'+
-        '<td><code class="key">'+esc(m.model)+'</code></td>'+
-        '<td>'+esc((m.useAs||[]).join(', '))+'</td>'+
-        '<td><span class="tag tag-blue">'+esc(m.speedClass)+'</span></td>'+
-        '<td><span class="tag tag-accent">'+esc(m.qualityClass)+'</span></td>'+
-        '<td>'+key+'</td>'+
-        '<td>'+(m.isPreset?'':('<button class="btn btn-sm btn-danger" onclick="deleteModel(\''+escapeAttr(m.id)+'\')">Delete</button>'))+'</td>'+
-        '</tr>'
-    }).join('');
-  }catch(e){$('modelsTable').innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--red)">Error loading models.</td></tr>'}
+    const [mr, pr] = await Promise.all([
+      api('/models').then(r=>r.json()),
+      api('/providers').then(r=>r.json()),
+    ]);
+    const models = mr.models || [];
+    const providers = pr.providers || [];
+    const accordion = document.getElementById('modelsAccordion');
+    if(!accordion) return;
+    if(!models.length && !providers.length){
+      accordion.innerHTML = '<div class="prov-group-empty">No models yet. Add an API key in <strong>Secrets</strong> to see available models here.</div>';
+      return;
+    }
+    const groups = new Map();
+    providers.forEach(function(p){ groups.set(p.id, { provider: p, models: [] }); });
+    models.forEach(function(m){
+      if(groups.has(m.providerId)){ groups.get(m.providerId).models.push(m); }
+      else { groups.set(m.providerId, { provider: { id: m.providerId, label: m.providerId, hasCredential: m.hasCredential }, models: [m] }); }
+    });
+    var h = '';
+
+    // Add a tip about adding more providers
+    var providerNamesWithKeys = [];
+    groups.forEach(function(g, provId2){
+      if (g.provider.hasCredential) { providerNamesWithKeys.push(g.provider.label || provId2); }
+    });
+    if (providerNamesWithKeys.length > 0) {
+      h += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;padding:8px 12px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.12);border-radius:8px">';
+      h += '🔑 Showing models for: <strong>' + providerNamesWithKeys.join(', ') + '</strong>. ';
+      h += '<a href="#" onclick="switchView(\'env\');return false" style="color:var(--accent)">Add more providers</a> to unlock more models.';
+      h += '</div>';
+    }
+
+    groups.forEach(function(g, provId){
+      // Skip providers without an API key
+      if (!g.provider.hasCredential) { return; }
+      var prov = g.provider;
+      var provModels = g.models;
+      var hasKey = prov.hasCredential !== false;
+      var modelCount = provModels.length;
+      h += '<div class="prov-group"><button class="prov-header" onclick="toggleProvGroup(this)">';
+      h += '<span class="arrow">▶</span>';
+      h += '<span class="prov-label">' + (hasKey ? '🔑' : '❌') + ' ' + esc(prov.label || prov.id) + ' <code class="key">' + esc(prov.id) + '</code></span>';
+      h += '<span class="prov-count">' + modelCount + ' model' + (modelCount !== 1 ? 's' : '') + '</span>';
+      if(hasKey){
+        h += '<button class="prov-discover" onclick="event.stopPropagation();discoverModelsForProvider(' + "'" + escapeAttr(provId) + "'" + ', this)">📡 Discover</button>';
+      }
+      h += '</button><div class="prov-body">';
+      if(provModels.length === 0){
+        h += '<div class="prov-group-empty">No models yet. ' + (hasKey ? 'Click Discover to auto-fetch models from this provider.' : 'Add an API key for this provider in Secrets first.') + '</div>';
+      } else {
+        provModels.forEach(function(mx){
+          h += '<div class="model-item"><span class="m-status">' + (mx.enabled !== false ? '✅' : '❌') + '</span>';
+          h += '<span class="m-key">' + esc(mx.title || mx.id) + '</span>';
+          h += '<span class="m-meta"><span class="m-tag">' + esc(mx.speedClass || '-') + '</span><span class="m-tag">' + esc(mx.qualityClass || '-') + '</span>';
+          if(mx.useAs && mx.useAs.length){
+            h += '<span class="m-tag" style="background:rgba(129,140,248,.15);color:var(--accent)">' + esc(mx.useAs.join(', ')) + '</span>';
+          }
+          h += '</span><span class="m-actions">' + (mx.isPreset ? '' : '<button class="btn btn-sm btn-danger" onclick="deleteModel(' + "'" + escapeAttr(mx.id) + "'" + ')" title="Delete model">🗑️</button>') + '</span></div>';
+        });
+      }
+      h += '</div></div>';
+    });
+    accordion.innerHTML = h;
+    var fb = accordion.querySelector('.prov-body');
+    var fh = accordion.querySelector('.prov-header');
+    if(fb && fh){ fb.classList.add('open'); fh.classList.add('open'); }
+  } catch(e){
+    var acc = document.getElementById('modelsAccordion');
+    if(acc) acc.innerHTML = '<div class="prov-group-empty" style="color:var(--red)">Error loading models.</div>';
+  }
 }
+
+function toggleProvGroup(btn){
+  btn.classList.toggle('open');
+  var body = btn.nextElementSibling;
+  if(body) body.classList.toggle('open');
+}
+
+async function discoverModelsForProvider(providerId, btn){
+  if(btn){ btn.disabled = true; btn.textContent = '⌛'; }
+  try{
+    var r = await api('/discover-models/' + encodeURIComponent(providerId), {method: 'POST'});
+    var d = await r.json();
+    if(!r.ok){ showToast(d.error || 'Discovery failed', 'error'); }
+    else if(d.modelsDiscovered === 0){ showToast('No new models discovered for ' + providerId, ''); }
+    else { showToast('Discovered ' + d.modelsDiscovered + ' model' + (d.modelsDiscovered !== 1 ? 's' : '') + ' from ' + providerId + '!'); }
+    refreshModels();
+  } catch(e){ showToast('Error: ' + e.message, 'error'); }
+}
+
+
 
 async function addModel(){
   const key=$('modalModelKey').value.trim();const provider=$('modalModelProv').value.trim();
@@ -864,6 +1270,8 @@ async function addApiKey(){
     closeModal('addKeyModal');
     $('modalKeyValue').value='';
     refreshKeys();
+    // Auto-discover models for this provider (non-blocking)
+    discoverModelsForProvider(providerId, null);
   }catch(e){showToast('Error: '+e.message,'error')}
 }
 
@@ -886,9 +1294,13 @@ async function refreshSettings(){
     const s=d.settings||{};
     $('setProfile').value=s.profile||'balanced';
     $('setWebMode').value=s.webMode||'off';
-    $('setExpertTokens').value=s.expertMaxTokens||2500;
-    $('setJudgeTokens').value=s.judgeMaxTokens||1800;
-    $('setSynthTokens').value=s.synthesisMaxTokens||5000;
+    $('setExpertTokens').value=s.expertMaxTokens||7500;
+    $('setJudgeTokens').value=s.judgeMaxTokens||5400;
+    $('setSynthTokens').value=s.synthesisMaxTokens||15000;
+    // Show Tavily key warning if web search is enabled but no key configured
+    const tavilyMissing = !s.tavilyKeyConfigured && (s.webMode === 'on' || s.webMode === 'auto');
+    const tavilyNote = document.getElementById('tavilyWarning');
+    if(tavilyNote){tavilyNote.style.display=tavilyMissing?'block':'none'}
   }catch(e){}
   // Populate the custom-profile model checkbox list (independent of settings load).
   await renderCustomModelsList();
@@ -954,15 +1366,30 @@ async function saveSettings(){
   const profile=$('setProfile').value;const webMode=$('setWebMode').value;
   try{
     const r=await api('/settings',{method:'POST',body:JSON.stringify({profile,webMode})});
-    await r.json();
-    showToast('Settings saved!');
+    const d=await r.json();
+    if(d.warning){showToast(d.warning,'error')}else{showToast('Settings saved!')}
+    syncSettingsUI();
   }catch(e){showToast('Error: '+e.message,'error')}
 }
 
+function onChatWebChange(){
+  const sel=$('chatWeb');const warn=$('chatWebWarning');
+  if(!sel||!warn)return;
+  const mode=sel.value;
+  if(mode==='on'||mode==='auto'){
+    api('/settings').then(r=>r.json()).then(d=>{
+      const keyOk=d.settings?.tavilyKeyConfigured;
+      warn.style.display=keyOk?'none':'inline-flex';
+    }).catch(()=>{warn.style.display='none'});
+  }else{
+    warn.style.display='none';
+  }
+}
+
 async function saveTokens(){
-  const expertMaxTokens=parseInt($('setExpertTokens').value)||2500;
-  const judgeMaxTokens=parseInt($('setJudgeTokens').value)||1800;
-  const synthesisMaxTokens=parseInt($('setSynthTokens').value)||5000;
+  const expertMaxTokens=parseInt($('setExpertTokens').value)||7500;
+  const judgeMaxTokens=parseInt($('setJudgeTokens').value)||5400;
+  const synthesisMaxTokens=parseInt($('setSynthTokens').value)||15000;
   try{
     const r=await api('/settings',{method:'POST',body:JSON.stringify({expertMaxTokens,judgeMaxTokens,synthesisMaxTokens})});
     await r.json();
@@ -1103,6 +1530,7 @@ async function sendChat(){
     if(d.answer){addChatMessage('assistant',d.answer,d.meta)}
     else if(d.error){addChatMessage('assistant','Error: '+d.error.message)}
     else{addChatMessage('assistant','(Empty response)')}
+    syncSettingsUI();
   }catch(e){
     const ti=document.getElementById('typingIndicator');
     if(ti)ti.remove();
@@ -1144,6 +1572,115 @@ function clearChat(){
     '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px">Chat cleared. Start a new conversation.</div>';
 }
 
+// ── Autocomplete ──────────────────────────────────────────
+const COMMANDS = [
+  {cmd:'/help',desc:'Get help for commands',cat:'General'},
+  {cmd:'/profile',desc:'View or change routing profile',cat:'Profile'},
+  {cmd:'/speed',desc:'Quick answers — fast models',cat:'Profile'},
+  {cmd:'/balanced',desc:'Mix of speed and quality',cat:'Profile'},
+  {cmd:'/quality',desc:'Deep reasoning — strong models',cat:'Profile'},
+  {cmd:'/custom',desc:'Manual model selection',cat:'Profile'},
+  {cmd:'/models',desc:'List all available models',cat:'Models'},
+  {cmd:'/providers',desc:'List all providers',cat:'Models'},
+  {cmd:'/addkey',desc:'Add an API key',cat:'Keys'},
+  {cmd:'/deletekey',desc:'Delete a stored API key',cat:'Keys'},
+  {cmd:'/listkeys',desc:'Show configured keys',cat:'Keys'},
+  {cmd:'/addprovider',desc:'Add a custom provider',cat:'Models'},
+  {cmd:'/deleteprovider',desc:'Remove a custom provider',cat:'Models'},
+  {cmd:'/enableprovider',desc:'Enable a provider',cat:'Models'},
+  {cmd:'/disableprovider',desc:'Disable a provider',cat:'Models'},
+  {cmd:'/addmodel',desc:'Add a custom model',cat:'Models'},
+  {cmd:'/deletemodel',desc:'Remove a custom model',cat:'Models'},
+  {cmd:'/enablemodel',desc:'Add model to custom set',cat:'Models'},
+  {cmd:'/disablemodel',desc:'Remove model from set',cat:'Models'},
+  {cmd:'/usemodel',desc:'Pick a model for custom set',cat:'Models'},
+  {cmd:'/unusemodel',desc:'Unpick a model',cat:'Models'},
+  {cmd:'/setjudge',desc:'Choose judge model',cat:'Models'},
+  {cmd:'/setsynthesis',desc:'Choose synthesis model',cat:'Models'},
+  {cmd:'/addsearchkey',desc:'Add Tavily web search key',cat:'Web'},
+  {cmd:'/web',desc:'Control web search mode',cat:'Web'},
+  {cmd:'/search',desc:'Show raw search results',cat:'Web'},
+  {cmd:'/memory',desc:'Show recent conversation',cat:'Memory'},
+  {cmd:'/clearmemory',desc:'Clear session memory',cat:'Memory'},
+  {cmd:'/newchat',desc:'Start a fresh session',cat:'Memory'},
+  {cmd:'/stats',desc:'Session statistics',cat:'Stats'},
+  {cmd:'/tokens',desc:'Show token budgets',cat:'Tokens'},
+  {cmd:'/settokens',desc:'Set token budgets',cat:'Tokens'},
+  {cmd:'/resettokens',desc:'Reset token budgets',cat:'Tokens'},
+  {cmd:'/wizard',desc:'Guided setup wizard',cat:'Setup'},
+  {cmd:'/resetregistry',desc:'Reset custom providers/models',cat:'Advanced'},
+];
+
+let AC_INDEX = -1;
+
+function closeAutocomplete(){
+  $('acDropdown').classList.remove('open');
+  AC_INDEX = -1;
+}
+
+function onChatInput(){
+  const input = $('chatInput');
+  const val = input.value;
+  const dd = $('acDropdown');
+  // Only show suggestions when typing a command (starts with /)
+  if(!val.startsWith('/') || val.indexOf(' ') > 0){
+    dd.classList.remove('open');
+    return;
+  }
+  const partial = val.toLowerCase();
+  const matches = COMMANDS.filter(function(c){ return c.cmd.startsWith(partial); });
+  if(matches.length === 0 || matches.length > 20){
+    dd.classList.remove('open');
+    return;
+  }
+  dd.innerHTML = matches.map(function(c, i){
+    return '<div class="ac-item" data-index="'+i+'" onmousedown="selectAutocomplete(\''+c.cmd+'\');event.preventDefault()">'+
+      '<span class="ac-cmd">'+c.cmd+'</span>'+
+      '<span class="ac-desc">'+esc(c.desc)+'</span>'+
+      '<span class="ac-cat">'+c.cat+'</span></div>';
+  }).join('');
+  dd.classList.add('open');
+  AC_INDEX = -1;
+}
+
+function onChatKey(e){
+  const dd = $('acDropdown');
+  if(!dd.classList.contains('open')) return;
+  const items = dd.querySelectorAll('.ac-item');
+  if(items.length === 0) return;
+  if(e.key === 'ArrowDown'){
+    e.preventDefault();
+    AC_INDEX = (AC_INDEX + 1) % items.length;
+    highlightItem(items);
+  }else if(e.key === 'ArrowUp'){
+    e.preventDefault();
+    AC_INDEX = (AC_INDEX - 1 + items.length) % items.length;
+    highlightItem(items);
+  }else if(e.key === 'Enter' || e.key === 'Tab'){
+    if(AC_INDEX >= 0 && AC_INDEX < items.length){
+      e.preventDefault();
+      const cmd = items[AC_INDEX].querySelector('.ac-cmd').textContent;
+      selectAutocomplete(cmd);
+    }
+  }else if(e.key === 'Escape'){
+    closeAutocomplete();
+  }
+}
+
+function highlightItem(items){
+  items.forEach(function(el){ el.classList.remove('highlighted'); });
+  if(AC_INDEX >= 0 && AC_INDEX < items.length){
+    items[AC_INDEX].classList.add('highlighted');
+    items[AC_INDEX].scrollIntoView({block:'nearest'});
+  }
+}
+
+function selectAutocomplete(cmd){
+  $('chatInput').value = cmd + ' ';
+  closeAutocomplete();
+  $('chatInput').focus();
+}
+
 // ── Helpers ────────────────────────────────────────────
 // esc()/escapeAttr() are defined in /js/utils.js (a tested module). Use the
 // module's versions when available; fall back to inline impls if the module
@@ -1151,7 +1688,258 @@ function clearChat(){
 // deferred module in some load orders).
 const esc = window.esc || function(s){if(!s)return '';const d=document.createElement('div');d.textContent=s;return d.innerHTML};
 const escapeAttr = window.escapeAttr || function(s){return esc(s).replace(/'/g,'&#39;').replace(/"/g,'&quot;')};
+
+// ── Sync Settings Across UI ─────────────────────────
+async function syncSettingsUI(){
+  try{
+    var r=await api('/settings');
+    var d=await r.json();
+    var s=d.settings||{};
+    $('chatProfile').value=s.profile||'balanced';
+    $('chatWeb').value=s.webMode||'off';
+    $('dashProfile').textContent=s.profile||'-';
+    // Also update Settings page dropdowns if visible
+    var sp=$('setProfile');
+    if(sp) sp.value=s.profile||'balanced';
+    var sw=$('setWebMode');
+    if(sw) sw.value=s.webMode||'off';
+    onChatWebChange();
+  }catch(e){}
+}
+
 function formatUptime(s){const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=Math.floor(s%60);if(h>0)return h+'h '+m+'m';if(m>0)return m+'m '+sec+'s';return sec+'s'}
+
+// ── Wizard ────────────────────────────────────────────────
+let WIZARD_STEP = 0;
+const WIZARD_TOTAL = 5;
+let WIZARD_COMPLETED_STEPS = { key: false, profile: 'balanced', web: false };
+
+function openWizard(){
+  WIZARD_STEP = 0;
+  WIZARD_COMPLETED_STEPS = { key: false, profile: 'balanced', web: false };
+  document.getElementById('wizardOverlay').classList.add('open');
+  renderWizard();
+}
+
+function closeWizard(){
+  document.getElementById('wizardOverlay').classList.remove('open');
+  try{localStorage.setItem('fmf_wizard_done','1')}catch(e){}
+}
+
+function renderWizard(){
+  const prog = document.getElementById('wizardProgress');
+  if(!prog) return;
+  let dots = '';
+  for(let i=0;i<WIZARD_TOTAL;i++){
+    const cls = i === WIZARD_STEP ? 'active' : (i < WIZARD_STEP ? 'done' : '');
+    dots += '<div class="wiz-dot '+cls+'" onclick="wizGoTo('+i+')"></div>';
+  }
+  prog.innerHTML = dots;
+  document.querySelectorAll('.wiz-step').forEach(function(el){el.classList.remove('active')});
+  const step = document.getElementById('wizStep'+WIZARD_STEP);
+  if(step) step.classList.add('active');
+}
+
+function wizNext(){
+  if(WIZARD_STEP === 3){ renderWizardChecklist(); }
+  if(WIZARD_STEP < WIZARD_TOTAL - 1){
+    WIZARD_STEP++;
+    renderWizard();
+  }
+}
+
+function wizPrev(){
+  if(WIZARD_STEP > 0){
+    WIZARD_STEP--;
+    renderWizard();
+  }
+}
+
+function wizSkip(){ wizNext(); }
+
+function wizGoTo(step){
+  if(step <= WIZARD_STEP || step < WIZARD_STEP){
+    WIZARD_STEP = step;
+    renderWizard();
+  }
+}
+
+function wizSelectProfile(profile, el){
+  WIZARD_COMPLETED_STEPS.profile = profile;
+  document.querySelectorAll('#wizStep2 .wiz-card').forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');
+}
+
+function wizOpenProviderUrl(){
+  var sel = document.getElementById('wizProvider').value;
+  var urls = {
+    groq: 'https://console.groq.com/keys',
+    gemini: 'https://aistudio.google.com/app/apikey',
+    openrouter: 'https://openrouter.ai/keys',
+    cerebras: 'https://console.cerebras.net/api-keys',
+  };
+  window.open(urls[sel] || urls.groq, '_blank');
+}
+
+async function wizSaveKey(){
+  var provider = document.getElementById('wizProvider').value;
+  var key = document.getElementById('wizApiKey').value.trim();
+  var status = document.getElementById('wizKeyStatus');
+  if(!key){
+    status.style.display = 'block';
+    status.style.background = 'rgba(251,191,36,.1)';
+    status.style.color = 'var(--yellow)';
+    status.textContent = 'No key entered. You can skip this step and add one later.';
+    wizNext();
+    return;
+  }
+  try{
+    var r = await api('/keys', {method:'POST', body:JSON.stringify({providerId: provider, apiKey: key})});
+    var d = await r.json();
+    if(!r.ok){ throw new Error(d.error || 'Failed') }
+    WIZARD_COMPLETED_STEPS.key = true;
+    status.style.display = 'block';
+    status.style.background = 'rgba(74,222,128,.1)';
+    status.style.color = 'var(--green)';
+    status.textContent = 'Key saved for '+provider+'!';
+    document.getElementById('wizApiKey').value = '';
+    refreshKeys();
+    setTimeout(function(){ status.style.display = 'none'; wizNext(); }, 1000);
+  }catch(e){
+    status.style.display = 'block';
+    status.style.background = 'rgba(248,113,113,.1)';
+    status.style.color = 'var(--red)';
+    status.textContent = 'Error: '+e.message;
+  }
+}
+
+async function wizSaveWeb(){
+  var tavilyKey = document.getElementById('wizTavilyKey').value.trim();
+  var webMode = document.getElementById('wizWebMode').value;
+  var status = document.getElementById('wizWebStatus');
+  try{
+    await api('/settings', {method:'POST', body:JSON.stringify({webMode})});
+  }catch(e){}
+  if(tavilyKey){
+    try{
+      var r = await api('/keys', {method:'POST', body:JSON.stringify({providerId: 'tavily', apiKey: tavilyKey})});
+      var d = await r.json();
+      if(!r.ok){ throw new Error(d.error || 'Failed') }
+      WIZARD_COMPLETED_STEPS.web = true;
+      status.style.display = 'block';
+      status.style.background = 'rgba(74,222,128,.1)';
+      status.style.color = 'var(--green)';
+      status.textContent = 'Web search configured!';
+      document.getElementById('wizTavilyKey').value = '';
+      setTimeout(function(){ status.style.display = 'none'; wizNext(); }, 1000);
+      return;
+    }catch(e){
+      status.style.display = 'block';
+      status.style.background = 'rgba(248,113,113,.1)';
+      status.style.color = 'var(--red)';
+      status.textContent = 'Error: '+e.message;
+      return;
+    }
+  }
+  wizNext();
+}
+
+function renderWizardChecklist(){
+  var check0 = document.getElementById('wizCheck0');
+  var check1 = document.getElementById('wizCheck1');
+  var check2 = document.getElementById('wizCheck2');
+  if(check0){
+    check0.className = WIZARD_COMPLETED_STEPS.key ? 'done' : '';
+    check0.innerHTML = '<span class="check-icon">'+(WIZARD_COMPLETED_STEPS.key?'✅':'⬜')+'</span> '+
+      (WIZARD_COMPLETED_STEPS.key?'API key saved':'API key (skipped — add later in Secrets)');
+  }
+  if(check1){
+    check1.className = 'done';
+    var labels = {speed:'Speed — Fast', balanced:'Balanced', quality:'Quality — Deep reasoning'};
+    check1.innerHTML = '<span class="check-icon">✅</span> Profile: '+(labels[WIZARD_COMPLETED_STEPS.profile]||'Balanced');
+  }
+  if(check2){
+    check2.className = WIZARD_COMPLETED_STEPS.web ? 'done' : '';
+    check2.innerHTML = '<span class="check-icon">'+(WIZARD_COMPLETED_STEPS.web?'✅':'⬜')+'</span> '+
+      (WIZARD_COMPLETED_STEPS.web?'Web search enabled':'Web search (skipped — add later)');
+  }
+}
+
+function finishWizard(){
+  closeWizard();
+  var profile = WIZARD_COMPLETED_STEPS.profile;
+  if(profile && profile !== 'balanced'){
+    api('/settings', {method:'POST', body:JSON.stringify({profile})}).then(function(){syncSettingsUI()}).catch(function(){});
+  }
+  switchView('chat');
+  var c = document.getElementById('chatMessages');
+  c.innerHTML = '';
+  addChatMessage('assistant', '**Setup complete!** You are ready to use Free Model Fusion.\n\nTry asking me something! Here are a few ideas:\n\n* "Explain quantum computing in simple terms"\n* "Write a Python script to sort files by date"\n* "What is the capital of France?"\n\nUse /help to see all available commands.\n\n**Pro tip:** Type /speed What is 2+2? to try the speed profile without switching permanently.');
+}
+
+// ── Sessions List ────────────────────────────────────────
+let CURRENT_SESSION = 'default';
+
+async function refreshSessions(){
+  try{
+    const r=await api('/sessions');const d=await r.json();
+    const list=$('sessionsList');if(!list)return;
+    const sessions=d.sessions||[];
+    if(sessions.length===0){
+      list.innerHTML='<div style="padding:9px 12px;font-size:12px;color:var(--text-muted)">No sessions yet.</div>';
+      return;
+    }
+    list.innerHTML=sessions.map(s=>{
+      const active=s.id===CURRENT_SESSION?' active':'';
+      const icon=s.messageCount>0?'💬':'🆕';
+      const preview=esc(s.lastMessagePreview);
+      const tagHtml=s.profile!=='balanced'?'<span class="tag tag-accent">'+esc(s.profile)+'</span>':'';
+      return '<button class="session-item'+active+'" data-session-id="'+escapeAttr(s.id)+'" onclick="switchToSession(\''+escapeAttr(s.id)+'\')" title="Session: '+esc(s.id)+'">'+
+        '<span class="sess-icon">'+icon+'</span>'+
+        '<span class="sess-info">'+
+          '<div class="sess-id">'+esc(s.id.slice(0,30))+'</div>'+
+          '<div class="sess-preview">'+preview+'</div>'+
+          '<div class="sess-meta">'+tagHtml+'<span>'+s.messageCount+' msg</span></div>'+
+        '</span></button>'
+    }).join('');
+  }catch(e){/* silently fail — sidebar is best-effort */}
+}
+
+function switchToSession(sessionId){
+  CURRENT_SESSION=sessionId;
+  // Update chat session ID input
+  $('chatSessionId').value=sessionId;
+  // Switch to chat view
+  switchView('chat');
+  // Load the session's memory into chat
+  if(sessionId==='default'||!sessionId){
+    clearChat();
+  }else{
+    loadSessionChat(sessionId);
+  }
+  // Highlight this session in the list using data-session-id
+  document.querySelectorAll('.session-item').forEach(el=>el.classList.remove('active'));
+  const activeEl=document.querySelector('.session-item[data-session-id="'+CSS.escape(sessionId)+'"]');
+  if(activeEl)activeEl.classList.add('active');
+}
+
+async function loadSessionChat(sessionId){
+  try{
+    const r=await api('/memory/'+encodeURIComponent(sessionId));
+    const d=await r.json();
+    const c=$('chatMessages');
+    c.innerHTML='';
+    if(d.messages&&d.messages.length>0){
+      d.messages.forEach(m=>{
+        addChatMessage(m.role,m.content);
+      });
+    }else{
+      c.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px">Session loaded. Send a message to continue.</div>';
+    }
+  }catch(e){
+    clearChat();
+  }
+}
 
 // ── Init ───────────────────────────────────────────────
 async function init(){
@@ -1163,8 +1951,25 @@ async function init(){
   // Health polling
   await checkHealth();
   setInterval(checkHealth,10000);
-  // Initial data load for dashboard
+  // Initial data load
   await refreshDashboard();
+  refreshSessions();
+  setInterval(refreshSessions,15000);
+
+  // Auto-open onboarding wizard on first visit
+  try{
+    if(!localStorage.getItem('fmf_wizard_done')){
+      // Check if there are any API keys configured — if not, show the wizard
+      const kr = await api('/keys').then(r=>r.json());
+      const hasKeys = kr.keys && kr.keys.length > 0;
+      if(!hasKeys){
+        // Small delay so the UI renders first
+        setTimeout(openWizard, 500);
+      }else{
+        localStorage.setItem('fmf_wizard_done','1');
+      }
+    }
+  }catch(e){/* silently fail */}
 }
 document.addEventListener('DOMContentLoaded',init);
 </script>

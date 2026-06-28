@@ -15,10 +15,10 @@ test('smoke: dashboard renders, sidebar nav is present, no console errors on loa
   // Wait for the SPA to mount (h1 or chat input).
   await page.waitForSelector('#chatInput, h1, h2', { timeout: 15_000 });
 
-  // The sidebar nav must have all 8 nav items (Chat, Dashboard, Providers,
-  // Models, Keys, Settings, Secrets, Memory) plus a Docs link.
+  // The sidebar nav must have all 9 nav items (Chat, Dashboard, Providers,
+  // Models, Keys, Settings, Secrets, Memory, Setup Wizard) plus a Docs link.
   const navButtons = page.locator('nav.sidebar-nav button.nav-item');
-  await expect(navButtons).toHaveCount(8);
+  await expect(navButtons).toHaveCount(9);
   const docsLink = page.locator('a[href="/docs"]');
   await expect(docsLink).toBeVisible();
 

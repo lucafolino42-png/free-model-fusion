@@ -1,6 +1,6 @@
 import { config } from '../config.js';
 import { logger } from '../utils/logger.js';
-import { setTelegramWebhook, deleteTelegramWebhook } from './send.js';
+import { setTelegramWebhook, deleteTelegramWebhook, setBotCommands } from './send.js';
 import type { FastifyInstance } from 'fastify';
 
 // ─── Track last-registered webhook (for idempotent re-init) ─
@@ -39,12 +39,14 @@ export function telegramStartMessage(): string {
     'Useful commands:',
     '• /help — full command list',
     '• /profile speed|balanced|quality|custom — choose how to route',
-    '• /add <model> — pick which models participate (requires profile: custom)',
-    '• /remove <model> — drop a model from the custom set',
+    '• /add <model> — pick a model for your custom set',
+    '• /remove <model> — remove a model from the custom set',
     '• /models — list available models',
     '• /providers — list available providers',
     '• /listkeys — show configured API keys',
-    '• /stats — session memory stats',
+    '• /web on|off|auto — toggle web search',
+    '• /stats — session statistics',
+    '• /newchat — start a fresh conversation',
     '',
     'To use paid providers, add API keys in the web dashboard (Secrets page).',
   ].join('\n');
@@ -61,6 +63,9 @@ export async function initTelegramBot(
     );
     return;
   }
+
+  // Register bot commands with Telegram for / autocomplete
+  await setBotCommands();
 
   // Register webhook route
   fastify.post('/telegram/webhook', async (request, reply) => {

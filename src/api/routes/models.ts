@@ -1,4 +1,5 @@
-import { getAllModels } from '../../providers/registry.js';
+import { getAllModels, getAllProviders } from '../../providers/registry.js';
+import { discoverModels } from '../../providers/modelDiscovery.js';
 import { db } from '../../db/client.js';
 import { customModels } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -6,12 +7,39 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 
 // ─── Model Routes ────────────────────────────────────────
+// Registers both the internal /models endpoints and the OpenAI-compatible
+// /v1/models endpoint that agent frameworks (Hermes, Open WebUI, etc.) require.
 export function registerModelRoutes(fastify: FastifyInstance): void {
   const f = fastify.withTypeProvider<ZodTypeProvider>();
 
+  // ── Internal /models (Fusion-native format) ────────────
   f.get('/models', async () => {
     const models = await getAllModels();
     return { models };
+  });
+
+  // ── OpenAI-compatible /v1/models (agent-facing) ────────
+  // Returns models in OpenAI's standard format so agent frameworks like
+  // Hermes, AutoGPT, LangChain, Open WebUI, Cursor, etc. can discover them.
+  //
+  // Response shape: { object: "list", data: [{ id, object: "model", created, owned_by }, ...] }
+  f.get('/v1/models', async () => {
+    const models = await getAllModels();
+    const providers = await getAllProviders();
+    const providerMap = new Map(providers.map(p => [p.id, p.label || p.id]));
+    const now = Math.floor(Date.now() / 1000);
+
+    return {
+      object: 'list',
+      data: models
+        .filter(m => m.enabled !== false)
+        .map(m => ({
+          id: m.id,
+          object: 'model',
+          created: now,
+          owned_by: providerMap.get(m.providerId) || m.providerId || 'fusion',
+        })),
+    };
   });
 
   f.post('/models', {
@@ -76,5 +104,18 @@ export function registerModelRoutes(fastify: FastifyInstance): void {
       return { error: `Model ${key} not found` };
     }
     return { success: true };
+  });
+
+  // ── Discover Models from a Provider ───────────────────────
+  // POST /discover-models/:providerId — fetches /v1/models from the
+  // provider's API and saves each as a custom model.
+  f.post('/discover-models/:providerId', async (request, reply) => {
+    const { providerId } = request.params as { providerId: string };
+    const result = await discoverModels(providerId);
+    if (!result.success) {
+      reply.status(400);
+      return result;
+    }
+    return result;
   });
 }

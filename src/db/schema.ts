@@ -12,6 +12,7 @@ export const sessions = sqliteTable('sessions', {
   preferredExperts: text('preferred_experts'), // JSON array of model keys
   preferredJudge: text('preferred_judge'),
   preferredSynthesis: text('preferred_synthesis'),
+  reasoningEffort: text('reasoning_effort').default('medium'),
 });
 
 // ─── Messages ────────────────────────────────────────────

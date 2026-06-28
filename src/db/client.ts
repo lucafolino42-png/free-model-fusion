@@ -24,7 +24,8 @@ export async function initializeDatabase(): Promise<void> {
         web_mode TEXT DEFAULT 'off',
         preferred_experts TEXT,
         preferred_judge TEXT,
-        preferred_synthesis TEXT
+        preferred_synthesis TEXT,
+        reasoning_effort TEXT DEFAULT 'medium'
       )
     `);
 
@@ -95,6 +96,16 @@ export async function initializeDatabase(): Promise<void> {
         updated_at INTEGER NOT NULL
       )
     `);
+
+    // ── Migrations for columns added after initial schema ──
+    // Add reasoning_effort to sessions if missing (added in v1.3)
+    try {
+      await sqliteClient.execute(
+        `ALTER TABLE sessions ADD COLUMN reasoning_effort TEXT DEFAULT 'medium'`
+      );
+    } catch {
+      // Column already exists — ignore
+    }
 
     // Create indexes
     await sqliteClient.execute(

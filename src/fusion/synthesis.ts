@@ -20,7 +20,8 @@ export async function runSynthesis(
   expertResponses: Array<{ modelId: string; content: string }>,
   judgeEvaluation: string,
   webContext: string,
-  history: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = []
+  history: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [],
+  reasoningEffort?: string
 ): Promise<SynthesisResult> {
   const provider = await getProviderById(synthesisModel.providerId);
   if (!provider || !provider.enabled) {
@@ -53,7 +54,7 @@ export async function runSynthesis(
           content: question,
         },
       ],
-      { maxTokens: config.synthesisMaxTokens, temperature: 0.3 }
+      { maxTokens: config.synthesisMaxTokens, temperature: 0.3, reasoningEffort }
     );
 
     // Treat empty/whitespace-only content as a failure so the caller's

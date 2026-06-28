@@ -6,6 +6,7 @@ import {
   updateSessionSettings,
 } from '../../fusion/memory.js';
 import { config } from '../../config.js';
+import { hasCredential } from '../../providers/credentials.js';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 
@@ -20,13 +21,16 @@ export function registerSettingsRoutes(fastify: FastifyInstance): void {
     const judgeMaxTokens = await getSetting('judgeMaxTokens');
     const synthesisMaxTokens = await getSetting('synthesisMaxTokens');
 
+    const tavilyKeyConfigured = !!(config.tavilyApiKey) || await hasCredential('tavily');
+
     return {
       settings: {
         profile: profile || 'balanced',
         webMode: webMode || 'off',
-        expertMaxTokens: expertMaxTokens ? parseInt(expertMaxTokens, 10) : 2500,
-        judgeMaxTokens: judgeMaxTokens ? parseInt(judgeMaxTokens, 10) : 1800,
-        synthesisMaxTokens: synthesisMaxTokens ? parseInt(synthesisMaxTokens, 10) : 5000,
+        expertMaxTokens: expertMaxTokens ? parseInt(expertMaxTokens, 10) : 7500,
+        judgeMaxTokens: judgeMaxTokens ? parseInt(judgeMaxTokens, 10) : 5400,
+        synthesisMaxTokens: synthesisMaxTokens ? parseInt(synthesisMaxTokens, 10) : 15000,
+        tavilyKeyConfigured,
       },
     };
   });
@@ -63,7 +67,29 @@ export function registerSettingsRoutes(fastify: FastifyInstance): void {
         (config as Record<string, unknown>).continuationMaxTokens = Number(value);
       }
     }
-    return { success: true };
+
+    // ── Propagate profile/webMode changes to the live config + default session
+    // The global settings table stores defaults, but the chat engine reads from
+    // config.defaultProfile (for NEW sessions) and from the session row (for
+    // the dashboard's 'default' session).  Without the lines below, saving
+    // profile/webMode in the Settings UI would have zero effect on chat.
+    if (body.profile) {
+      const p = body.profile as string;
+      (config as Record<string, unknown>).defaultProfile = p;
+      // Also update the default session so the dashboard picks it up instantly.
+      await updateSessionSettings('default', { profile: p });
+    }
+    if (body.webMode) {
+      await updateSessionSettings('default', { webMode: body.webMode as string });
+    }
+
+    // If web search was turned on/auto but no Tavily key is configured, warn.
+    let warning: string | undefined;
+    if (body.webMode && (body.webMode === 'on' || body.webMode === 'auto') && !config.tavilyApiKey) {
+      warning = 'Web search is enabled but no Tavily API key is configured. Set TAVILY_API_KEY or use /addsearchkey tavily <key>.';
+    }
+
+    return { success: true, warning };
   });
 
   f.get('/memory/:sessionId', async (request) => {

@@ -1,6 +1,62 @@
+// ─── Free Model Fusion App Documentation ─────────────────
+// Injected into system prompts so AI models can answer usage questions.
+export const APP_DOCS = `You are running inside **Free Model Fusion**, a multi-model AI router that sends your questions to several AI models in parallel (the expert panel), evaluates their answers, and synthesizes a final response.
+
+Users interact through a web dashboard or a Telegram bot. Here is how the app works and what users can ask you about:
+
+**Routing Profiles**
+- /speed — fast, concise answers with cheaper/faster models
+- /balanced — default, balanced quality and speed
+- /quality — deeper reasoning with slower/higher-quality models
+- /custom — hand-pick which models participate
+- Send a message with the profile as prefix: e.g., "/speed What is 2+2?"
+- /reasoning [low|medium|high|xhigh] — set how deeply the model thinks before answering
+
+**Skills**
+- /skills — list all available skill prompts
+- /skills load <name> — load a skill to guide the model's behavior
+- /skills unload — clear the active skill
+
+**Web Search**
+- Users can enable web search via /web on|off|auto
+- In "auto" mode, the system searches the web when the query looks time-sensitive (news, current events, dates, sports scores, etc.)
+- /search <query> — run a web search and show raw results
+- Requires a Tavily API key (set via /addsearchkey tavily <key>)
+
+**Model & Provider Management**
+- /models — list all available AI models
+- /providers — list all AI providers (Groq, OpenRouter, Gemini, etc.)
+- /addkey <provider> <key> — add an API key
+- /deletekey <provider> — remove a stored key
+- /listkeys — see which keys are configured
+- /addmodel {...json...} — register a custom model
+- /deletemodel <key> — remove a custom model
+- /usemodel <key> — add a model to your custom expert set
+- /unusemodel <key> — remove a model from the set
+- /setjudge <key> — pick which model evaluates expert answers
+- /setsynthesis <key> — pick which model writes the final answer
+
+**Conversation Memory**
+- The app remembers your conversation within a session (identified by a session ID)
+- /memory — show recent messages in this session
+- /clearmemory confirm — erase all messages (session settings are kept)
+- /newchat — start a fresh session with a new ID (previous session is preserved)
+
+**Token Settings**
+- /tokens — show current max-token budgets
+- /settokens <expert> <judge> <synthesis> — change token budgets
+- /resettokens confirm — reset to environment defaults
+
+**Answer format guidelines (for you, the AI):**
+- When a user asks "how do I...", check if the answer is available via one of the commands above and tell them the exact command to use
+- If the user asks about the app itself, answer helpfully with the correct commands
+- You can also answer general knowledge questions — the app is a general-purpose AI assistant`;
+
 // ─── Expert System Prompt ────────────────────────────────
 export function expertSystemPrompt(webContext: string): string {
-  return `You are a practical expert answering user questions. Answer directly and concisely.
+  return `${APP_DOCS}
+
+Answer the user's question directly and concisely.
 
 Guidelines:
 - Be specific and actionable
@@ -54,7 +110,7 @@ export function synthesisSystemPrompt(
     .map((r) => `=== Expert: ${r.modelId} ===\n${r.content}`)
     .join('\n\n');
 
-  return `You are synthesizing expert responses into a final answer. Produce the best possible answer for the user.
+  return `${APP_DOCS}
 
 ## Question
 ${question}
@@ -83,10 +139,14 @@ export const CONTINUATION_PROMPT =
   'Continue exactly where you left off. Do not restart. Do not repeat previous sections unless necessary. Finish the answer completely.';
 
 // ─── Expert Expert Prompt (for the expert panel itself) ──
-export function expertExpertPrompt(question: string): string {
-  return `Answer this question directly and concisely with practical details:
-
-${question}
+/**
+ * NOTE: The question is intentionally NOT included here — it was previously
+ * duplicated (appeared in the system prompt AND as the final user message).
+ * The model receives the question only once, via the user message,
+ * eliminating the duplication bug.
+ */
+export function expertExpertPrompt(): string {
+  return `Answer the user's question directly and concisely with practical details.
 
 Be specific, use examples, and include concrete values where applicable.`;
 }

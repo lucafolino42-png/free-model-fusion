@@ -14,6 +14,8 @@ Think of it as a **free OpenRouter-style model fusion engine** for people who co
 
 **Full reference: open `/docs` after launching, or see [`public/docs.html`](public/docs.html).**
 
+**New in v1.0:** Reasoning effort control, skills system, setup wizard, OpenAI-compatible `/v1/chat/completions` endpoint with streaming, embeddings API, web UI dashboard with settings management, race mode for faster responses, and query complexity analysis.
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
@@ -44,10 +46,16 @@ Free Model Fusion solves this with a clean, single-file runtime. No n8n, no comp
 - 🧠 **Judge + Synthesis Pipeline** — Evaluate expert responses and produce a refined final answer
 - 🔄 **Automatic Fallback** — If some models fail, continue with successful ones
 - 📚 **Session Memory** — Persistent conversation history with configurable context length
-- 🔍 **Web Search** — Built-in Tavily search integration for current/relevant information
+- 🔍 **Web Search** — Built-in Tavily search integration with auto-detect mode
+- 🏃 **Race Mode** — Proceed to synthesis once 2 experts respond (speed/balanced profiles)
+- 🧩 **Skills System** — Load task-specific prompt modifiers (code review, debugging, education, etc.)
+- 🎯 **Reasoning Effort** — Control model thinking depth (low/medium/high/xhigh)
 - 🤖 **Telegram Bot** — Full Telegram support with webhook and polling modes
+- 🌐 **Web UI Dashboard** — Full SPA with chat, providers, models, keys, settings, and setup wizard
+- 🔗 **OpenAI-Compatible API** — Connect any OpenAI SDK client via `/v1/chat/completions` with streaming + tools
 - 🔐 **Encrypted Credentials** — API keys stored encrypted in the database
 - 🧩 **Custom Providers** — Add any OpenAI-compatible API endpoint
+- 🚀 **Setup Wizard** — Step-by-step guided onboarding for new users
 - 🐳 **Docker Ready** — One command to deploy
 - 📦 **Self-Hosted** — Your keys, your data, your control
 
@@ -204,11 +212,16 @@ Free Model Fusion comes pre-configured with presets for:
 | Cerebras | ⚡ very_fast | Good | ✅ Free |
 | Gemini | ⚡ fast | Strong | ✅ Free |
 | OpenRouter | ⚡ fast | Frontier | ✅ Free models |
+| SambaNova | ⚡ fast | Good | ✅ Free |
 | Together | ⚡ fast | Strong | 💲 Pay-as-you-go |
 | Fireworks | ⚡ fast | Strong | 💲 Pay-as-you-go |
 | DeepInfra | ⚡ fast | Good | 💲 Pay-as-you-go |
 | Novita | ⚡ fast | Good | 💲 Cheap |
+| Hyperbolic | 🐢 medium | Good | 💲 Pay-as-you-go |
 | Perplexity | 🐢 medium | Strong | 💲 Pay-as-you-go |
+| Nebius | 🐢 medium | Strong | 💲 Pay-as-you-go |
+| Replicate | 🐢 medium | Good | 💲 Pay-as-you-go |
+| Lambda Labs | 🐢 medium | Strong | 💲 Pay-as-you-go |
 | NVIDIA NIM | 🐢 slow | Frontier | 💲 Pay-as-you-go |
 | Custom | Configurable | Configurable | You choose |
 
@@ -333,7 +346,7 @@ Telegram webhook endpoint (configured automatically).
 
 | Command | Description |
 |---------|-------------|
-| `/help` | Show help message |
+| `/help [command]` | Show help or get command details |
 | `/profile [mode]` | View/change routing profile |
 | `/speed [question]` | Quick answer (or set profile) |
 | `/balanced [question]` | Balanced mode (default) |
@@ -347,12 +360,28 @@ Telegram webhook endpoint (configured automatically).
 | `/addmodel {...json...}` | Add custom model |
 | `/usemodel <key>` | Use model as expert |
 | `/unusemodel <key>` | Stop using model |
+| `/add <key>` | Alias for `/usemodel` |
+| `/remove <key>` | Alias for `/unusemodel` |
+| `/enablemodel <key>` | Add model to custom expert set |
+| `/disablemodel <key>` | Remove model from expert set |
+| `/enableprovider <id>` | Enable a provider |
+| `/disableprovider <id>` | Disable a provider |
+| `/setjudge <key>` | Set judge model |
+| `/setsynthesis <key>` | Set synthesis model |
+| `/reasoning [level]` | Control reasoning effort |
+| `/skills [load/unload/search]` | Load, unload, or search skills |
+| `/addsearchkey tavily <key>` | Add web search API key |
 | `/web [on\|off\|auto]` | Web search mode |
 | `/search <query>` | Manual web search |
 | `/memory` | Show conversation history |
 | `/clearmemory confirm` | Clear session memory |
+| `/newchat` | Start fresh session |
+| `/stats` | Session statistics |
 | `/tokens` | Show token settings |
 | `/settokens <e> <j> <s>` | Set token limits |
+| `/resettokens confirm` | Reset token defaults |
+| `/wizard` | Guided setup wizard |
+| `/resetregistry confirm` | Reset custom providers/models |
 
 ## Security
 
@@ -386,8 +415,8 @@ By default, Free Model Fusion uses SQLite (zero setup). For PostgreSQL:
 
 ## Roadmap
 
-- [ ] Streaming responses
-- [ ] Web UI dashboard
+- [x] Streaming responses (`/v1/chat/completions`)
+- [x] Web UI dashboard (full SPA)
 - [ ] More web search providers (SearXNG, Bing, Google)
 - [ ] PostgreSQL driver support
 - [ ] Usage metrics and analytics

@@ -15,12 +15,12 @@ export interface ParsedCommand {
   type: 'message' | 'help' | 'profile' | 'speed' | 'balanced' | 'quality' | 'custom' |
     'models' | 'providers' | 'addkey' | 'deletekey' | 'listkeys' |
     'addprovider' | 'deleteprovider' | 'enableprovider' | 'disableprovider' |
-    'addmodel' | 'deletemodel' | 'enablemodel' | 'disablemodel' |
+    'addmodel' | 'deletemodel' |
     'usemodel' | 'unusemodel' | 'setjudge' | 'setsynthesis' |
     'addsearchkey' | 'web' | 'search' |
     'memory' | 'clearmemory' |
     'tokens' | 'settokens' | 'resettokens' |
-    'resetregistry' | 'unknown';
+    'newchat' | 'stats' | 'resetregistry' | 'wizard' | 'reasoning' | 'skills' | 'unknown';
   text: string; // Remaining text after command
   args: string[];
   profileOverride?: RoutingProfile; // For /speed question style
@@ -40,9 +40,9 @@ export function parseCommand(message: string): ParsedCommand {
   const text = parts.slice(1).join(' ');
   const args = parts.slice(1);
 
-  // /help
+  // /help [command]
   if (cmd === '/help') {
-    return { type: 'help', text: '', args: [] };
+    return { type: 'help', text, args };
   }
 
   // /profile [speed|balanced|quality|custom]
@@ -132,23 +132,13 @@ export function parseCommand(message: string): ParsedCommand {
     return { type: 'deletemodel', text, args };
   }
 
-  // /enablemodel <modelKey>
-  if (cmd === '/enablemodel') {
-    return { type: 'enablemodel', text, args };
-  }
-
-  // /disablemodel <modelKey>
-  if (cmd === '/disablemodel') {
-    return { type: 'disablemodel', text, args };
-  }
-
-  // /usemodel <modelKey>
-  if (cmd === '/usemodel') {
+  // /usemodel <modelKey>  (aliases: /add, /enablemodel)
+  if (cmd === '/usemodel' || cmd === '/add' || cmd === '/enablemodel') {
     return { type: 'usemodel', text, args };
   }
 
-  // /unusemodel <modelKey>
-  if (cmd === '/unusemodel') {
+  // /unusemodel <modelKey>  (aliases: /remove, /disablemodel)
+  if (cmd === '/unusemodel' || cmd === '/remove' || cmd === '/disablemodel') {
     return { type: 'unusemodel', text, args };
   }
 
@@ -205,6 +195,31 @@ export function parseCommand(message: string): ParsedCommand {
   // /resetregistry [confirm]
   if (cmd === '/resetregistry') {
     return { type: 'resetregistry', text, args };
+  }
+
+  // /reasoning [low|medium|high|xhigh]
+  if (cmd === '/reasoning') {
+    return { type: 'reasoning', text, args };
+  }
+
+  // /skills [load <name>]
+  if (cmd === '/skills') {
+    return { type: 'skills', text, args };
+  }
+
+  // /wizard [start|status|key|profile|web|skip|done]
+  if (cmd === '/wizard') {
+    return { type: 'wizard', text, args };
+  }
+
+  // /newchat — start fresh (no confirmation required)
+  if (cmd === '/newchat') {
+    return { type: 'newchat', text: '', args: [] };
+  }
+
+  // /stats — session statistics
+  if (cmd === '/stats') {
+    return { type: 'stats', text: '', args: [] };
   }
 
   return { type: 'unknown', text: trimmed, args: [] };
