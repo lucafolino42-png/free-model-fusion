@@ -14,7 +14,7 @@ Think of it as a **free OpenRouter-style model fusion engine** for people who co
 
 **Full reference: open `/docs` after launching, or see [`public/docs.html`](public/docs.html).**
 
-**New in v1.0:** Reasoning effort control, skills system, setup wizard, OpenAI-compatible `/v1/chat/completions` endpoint with streaming, embeddings API, web UI dashboard with settings management, race mode for faster responses, and query complexity analysis.
+**New in v1.0:** Reasoning effort control, skills system, setup wizard, OpenAI-compatible `/v1/chat/completions` endpoint with streaming, embeddings API, web UI dashboard with settings management, race mode for faster responses, query complexity analysis, accordion-based model groups with Discover button, Telegram meta footer with routing info, and tripled default token budgets (expert=22500, judge=16200, synthesis=45000).
 
 ## License
 
@@ -65,7 +65,7 @@ Free Model Fusion solves this with a clean, single-file runtime. No n8n, no comp
 
 ```bash
 # Clone & enter
-git clone https://github.com/yourusername/free-model-fusion.git
+git clone https://github.com/lucafolino42-png/free-model-fusion.git
 cd free-model-fusion
 
 # Copy env and edit
@@ -83,7 +83,7 @@ curl http://localhost:3000/health
 
 ```bash
 # Clone & enter
-git clone https://github.com/yourusername/free-model-fusion.git
+git clone https://github.com/lucafolino42-png/free-model-fusion.git
 cd free-model-fusion
 
 # Install dependencies
@@ -195,9 +195,9 @@ Free Model Fusion supports any OpenAI-compatible API endpoint:
 | `NVIDIA_NIM_API_KEY` | — | NVIDIA NIM API key |
 | `FUSION_DEFAULT_PROFILE` | `balanced` | `speed`, `balanced`, `quality`, or `custom` |
 | `FUSION_MAX_EXPERTS` | `4` | Maximum expert models to call |
-| `FUSION_EXPERT_MAX_TOKENS` | `2500` | Max tokens per expert response |
-| `FUSION_JUDGE_MAX_TOKENS` | `1800` | Max tokens for judge evaluation |
-| `FUSION_SYNTHESIS_MAX_TOKENS` | `5000` | Max tokens for synthesis |
+| `FUSION_EXPERT_MAX_TOKENS` | `22500` | Max tokens per expert response |
+| `FUSION_JUDGE_MAX_TOKENS` | `16200` | Max tokens for judge evaluation |
+| `FUSION_SYNTHESIS_MAX_TOKENS` | `45000` | Max tokens for synthesis |
 | `FUSION_HISTORY_MESSAGES` | `12` | Max history messages to load |
 
 See [.env.example](.env.example) for the complete list.
@@ -321,7 +321,7 @@ Send a chat message to the fusion engine.
     "models": { "experts": [...], "judge": "...", "synthesis": "..." },
     "web": { "enabled": true, "searched": true, "resultsCount": 5 },
     "memory": { "sessionId": "...", "messagesLoaded": 8, "messagesSaved": true },
-    "tokens": { "expert": 2500, "judge": 1800, "synthesis": 5000, ... }
+    "tokens": { "expert": 22500, "judge": 16200, "synthesis": 45000, ... }
   }
 }
 ```
@@ -428,9 +428,8 @@ By default, Free Model Fusion uses SQLite (zero setup). For PostgreSQL:
 
 ## Limitations
 
-- **No streaming yet** — All responses are generated in full before returning
-- **No web UI in v1** — Telegram and API only
-- **Model IDs change** — Provider model IDs may change; you can override via custom providers
+- **No token-by-token streaming yet** — Responses are generated in full, then streamed as chunks via `/v1/chat/completions`
+- **Model IDs change** — Provider model IDs may change; use 📡 Discover in the Models view to re-fetch
 - **Rate limits** — Each free provider has its own rate limits
 - **SQLite default** — SQLite works great for single-user; use PostgreSQL for multi-user
 

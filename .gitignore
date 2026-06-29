@@ -10,3 +10,22 @@ drizzle/
 coverage/
 .tmp/
 *.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temp
+scripts/
