@@ -1,5 +1,5 @@
 /**
- * Convert plain text to Telegram-compatible HTML.
+ * Convert plain text to Telegram-compatible HTML with visual hierarchy.
  *
  * Strategy:
  * 1. First, apply structural formatting (section headers, sources, code blocks)
@@ -8,9 +8,11 @@
  *
  * Visual hierarchy goals:
  * - Main answer content: bold section headers, key-value pairs, bullet lists
- * - Sources/references: <blockquote> with dimmer presentation
+ * - Sources/references: 📚 with clean link formatting
  * - URLs: show domain as label, keep scannable
  * - Numbered steps: bold numbers for clarity
+ * - Emoji context clues: 📊 data, ⚙️ settings, 💡 tips, ✅ results, ⚠️ warnings
+ * - Visual separators (━━) between major sections
  */
 
 function escapeHtml(text: string): string {
@@ -19,6 +21,26 @@ function escapeHtml(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/** Contextual emoji for different label types in Label: value pairs. */
+function labelEmoji(label: string): string {
+  const lower = label.toLowerCase();
+  if (lower.includes('status') || lower.includes('result')) return '✅ ';
+  if (lower.includes('profile') || lower.includes('mode')) return '⚙️ ';
+  if (lower.includes('speed') || lower.includes('quality')) return '⚡ ';
+  if (lower.includes('error') || lower.includes('fail') || lower.includes('warn')) return '⚠️ ';
+  if (lower.includes('total') || lower.includes('count') || lower.includes('number')) return '📊 ';
+  if (lower.includes('cost') || lower.includes('price') || lower.includes('token')) return '💰 ';
+  if (lower.includes('model') || lower.includes('expert') || lower.includes('judge')) return '🤖 ';
+  if (lower.includes('session') || lower.includes('id')) return '🆔 ';
+  if (lower.includes('time') || lower.includes('duration') || lower.includes('uptime')) return '⏱️ ';
+  if (lower.includes('key') || lower.includes('api')) return '🔑 ';
+  if (lower.includes('web') || lower.includes('search')) return '🌐 ';
+  if (lower.includes('memory') || lower.includes('message')) return '💾 ';
+  if (lower.includes('source') || lower.includes('link') || lower.includes('reference')) return '📚 ';
+  if (lower.includes('step')) return '🔢 ';
+  return '';
 }
 
 function escapeUrlAttr(url: string): string {
@@ -147,7 +169,8 @@ export function convertToTelegramHtml(text: string): string {
         inSourcesBlock = true;
         // Insert a blank line as separator before sources block
         resultLines.push('');
-        resultLines.push('<i>Sourced from:</i>');
+        resultLines.push('━━━━━━━━━━━━');
+        resultLines.push('📚 <b>Sources</b>');
         continue;
       }
 
@@ -233,14 +256,14 @@ export function convertToTelegramHtml(text: string): string {
     // Markdown headings (## Title)
     const headingMatch = trimmedLine.match(/^#{1,6}\s+(.+)/);
     if (headingMatch) {
-      resultLines.push(`<b>${escapeHtml(headingMatch[1].trim())}</b>`);
+      resultLines.push(`📌 <b>${escapeHtml(headingMatch[1].trim())}</b>`);
       continue;
     }
 
     // Dashed headings (Title\n---)
     const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
     if (nextLine.match(/^[-=]{3,}$/) && !trimmedLine.match(/^[-=]{3,}$/)) {
-      resultLines.push(`<b>${escapeHtml(trimmedLine)}</b>`);
+      resultLines.push(`📌 <b>${escapeHtml(trimmedLine)}</b>`);
       continue;
     }
 
@@ -280,7 +303,8 @@ export function convertToTelegramHtml(text: string): string {
     if (labelMatch && labelMatch[1].trim().length > 0 && labelMatch[1].trim().length < 60) {
       const label = labelMatch[1].trim();
       const value = labelMatch[2].trim();
-      const bullet = isBulletItem ? '* ' : '';
+      const bullet = isBulletItem ? '• ' : '';
+      const emoji = labelEmoji(label);
 
       const looksLikeCode =
         /^[\d.]+$/.test(value) ||
@@ -293,16 +317,17 @@ export function convertToTelegramHtml(text: string): string {
         value.startsWith('<a href');
 
       if (looksLikeCode) {
-        resultLines.push(`${bullet}<b>${label}:</b> <code>${value}</code>`);
+        resultLines.push(`${bullet}${emoji}<b>${label}:</b> <code>${value}</code>`);
       } else {
-        resultLines.push(`${bullet}<b>${label}:</b> ${value}`);
+        resultLines.push(`${bullet}${emoji}<b>${label}:</b> ${value}`);
       }
       continue;
     }
 
     // Handle bullets (just plain bullets without label:value)
     if (isBulletItem) {
-      resultLines.push(`* ${contentLine}`);
+      const emoji = contentLine.toLowerCase().startsWith('tip') ? '💡 ' : '';
+      resultLines.push(`• ${emoji}${contentLine}`);
       continue;
     }
 
@@ -331,7 +356,7 @@ export function convertToTelegramHtml(text: string): string {
 
     // ── Plain section headers ────────────────────────────
     if (isSectionHeader(contentLine)) {
-      resultLines.push(`<b>${contentLine}</b>`);
+      resultLines.push(`📌 <b>${contentLine}</b>`);
       continue;
     }
 

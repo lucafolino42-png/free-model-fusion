@@ -60,14 +60,14 @@ describe('convertToTelegramHtml', () => {
 
   it('handles bullet points', () => {
     const result = convertToTelegramHtml('- Item one\n- Item two');
-    expect(result).toContain('* Item one');
-    expect(result).toContain('* Item two');
+    expect(result).toContain('• Item one');
+    expect(result).toContain('• Item two');
   });
 
   it('handles asterisk bullets', () => {
     const result = convertToTelegramHtml('* Item one\n* Item two');
-    expect(result).toContain('* Item one');
-    expect(result).toContain('* Item two');
+    expect(result).toContain('• Item one');
+    expect(result).toContain('• Item two');
   });
 
   it('converts URLs to links', () => {
@@ -118,7 +118,7 @@ Caveat
   it('formats Sources section with blockquote label', () => {
     const input = 'The capital of France is Paris.\n\nSources\n- https://example.com/france\n- Travel Guide — https://lonelyplanet.com/france';
     const result = convertToTelegramHtml(input);
-    expect(result).toContain('<i>Sourced from:</i>');
+    expect(result).toContain('📚 <b>Sources</b>');
     expect(result).toContain('example.com/france');
     expect(result).toContain('Travel Guide');
     expect(result).toContain('<b>Travel Guide</b>');
@@ -127,7 +127,7 @@ Caveat
   it('formats References section', () => {
     const input = 'Key findings.\n\nReferences\n[1] Article Title — https://arxiv.org/abs/1234';
     const result = convertToTelegramHtml(input);
-    expect(result).toContain('<i>Sourced from:</i>');
+    expect(result).toContain('📚 <b>Sources</b>');
     expect(result).toContain('<code>[1]</code>');
   });
 
@@ -144,7 +144,7 @@ Caveat
 
   it('keeps bullet items as bullets', () => {
     const result = convertToTelegramHtml('* 1. This is not a numbered step');
-    expect(result).toContain('*');
+    expect(result).toContain('•');
   });
 
   it('handles Markdown bold', () => {

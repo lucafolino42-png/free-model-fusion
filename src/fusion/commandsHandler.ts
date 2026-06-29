@@ -22,6 +22,78 @@ import { FusionError } from '../utils/errors.js';
 import type { FusionResult, RoutingProfile } from '../providers/types.js';
 import type { RegisteredModel } from '../providers/types.js';
 
+// ─── Telegram Meta Footer ─────────────────────────────
+// Appends routing and performance info below the formatted answer.
+interface MetaFooterOpts {
+  profile: string;
+  expertsUsed: number;
+  judgeUsed: boolean;
+  webSearched: boolean;
+  webWarning?: string;
+  estimatedCost: number;
+  modelsUsed: string[];
+  judgeModel?: string;
+  synthesisModel: string;
+  racedAhead?: boolean;
+}
+
+export function appendTelegramMetaFooter(
+  content: string,
+  opts: MetaFooterOpts
+): string {
+  const parts: string[] = [content, ''];
+
+  // Separator
+  parts.push('━━━━━━━━━━━━');
+  parts.push('');
+
+  // Routing section
+  parts.push('⚙️ <b>Routing</b>');
+  parts.push('• Profile: <b>' + opts.profile + '</b>');
+  parts.push('• Experts used: ' + opts.expertsUsed + '/' + opts.modelsUsed.length);
+  if (opts.racedAhead) {
+    parts.push('• ⚡ Raced ahead (speed mode)');
+  }
+  parts.push('• Judge: ' + (opts.judgeUsed ? '✅ Used' : '❌ Not used'));
+  parts.push('');
+
+  // Web search
+  if (opts.webSearched) {
+    parts.push('🌐 <b>Web Search</b>');
+    parts.push('• Searched the web for fresh information');
+    if (opts.webWarning) {
+      parts.push('• ⚠️ Warning: ' + opts.webWarning);
+    }
+    parts.push('');
+  }
+
+  // Models used
+  parts.push('🤖 <b>Models</b>');
+  if (opts.modelsUsed.length > 0) {
+    parts.push('• Experts: <code>' + opts.modelsUsed.join('</code>, <code>') + '</code>');
+  }
+  if (opts.judgeModel) {
+    parts.push('• Judge: <code>' + opts.judgeModel + '</code>');
+  }
+  parts.push('• Synthesis: <code>' + opts.synthesisModel + '</code>');
+  parts.push('');
+
+  // Cost estimate (formatted nicely)
+  if (opts.estimatedCost > 0) {
+    const costStr = opts.estimatedCost < 0.0001
+      ? '< $0.0001'
+      : '$' + opts.estimatedCost.toFixed(4);
+    parts.push('💰 <b>Cost</b>');
+    parts.push('• Estimated: ' + costStr);
+    parts.push('');
+  }
+
+  // Tip
+  parts.push('💡 Use <code>/stats</code> for session details');
+
+  return parts.join('\n');
+}
+
 // ─── Error Message Formatters (pure, testable) ──────────
 export function formatAllExpertsFailed(
   errors: Array<{ provider: string; model: string; error: string }>
@@ -357,9 +429,6 @@ async function handleChatMessage(
     continued = continuationResult.continued;
   }
 
-  // Format response
-  const telegramHtml = convertToTelegramHtml(finalContent);
-
   const totalExperts = routing.experts.length;
   const totalCalls = (judgeUsed ? 1 : 0) + 1 + (continued ? 1 : 0);
 
@@ -383,6 +452,21 @@ async function handleChatMessage(
     estimateTotalCost(judgeCall) +
     estimateTotalCost(synthesisCall) +
     (continued ? estimateTotalCost(synthesisCall) : 0);
+
+  // Format response with enhanced meta footer (must be after cost estimate)
+  const formattedContent = convertToTelegramHtml(finalContent);
+  const telegramHtml = appendTelegramMetaFooter(formattedContent, {
+    profile: effectiveProfile,
+    expertsUsed: expertResult.responses.length,
+    judgeUsed,
+    webSearched,
+    webWarning,
+    estimatedCost: estimatedCostUsd,
+    modelsUsed: routing.experts.map((m) => m.id),
+    judgeModel: routing.judge?.id,
+    synthesisModel: (routing.synthesis || routing.experts[0]).id,
+    racedAhead: expertResult.racedAhead ? true : false,
+  });
 
   // Build meta
   const result: FusionResult = {
@@ -426,7 +510,7 @@ async function handleChatMessage(
       },
       errors: responseErrors.length > 0 ? responseErrors : undefined,
       judgeScores: judgeResult.scores,
-      racedAhead: expertResult.racedAhead,
+      racedAhead: typeof expertResult.racedAhead === 'number' ? expertResult.racedAhead : 0,
       estimatedCostUsd,
       reasoningEffort,
     },
@@ -660,7 +744,7 @@ export const COMMAND_HELP: Record<string, string> = {
 
   resettokens: 'Reset token budgets to default values.\n\n' +
     'Usage: /resettokens confirm\n\n' +
-    'Defaults: expert=7500, judge=5400, synthesis=15000',
+    'Defaults: expert=22500, judge=16200, synthesis=45000',
 
   resetregistry: 'Delete all custom providers and models.\n\n' +
     'Usage: /resetregistry confirm\n\n' +
@@ -1299,9 +1383,9 @@ async function handleResetTokens(args: string[]): Promise<FusionResult> {
   // Reset to env/defaults
   // Re-read from env
   const resetConfig = {
-    expertMaxTokens: parseInt(process.env.FUSION_EXPERT_MAX_TOKENS || '7500', 10),
-    judgeMaxTokens: parseInt(process.env.FUSION_JUDGE_MAX_TOKENS || '5400', 10),
-    synthesisMaxTokens: parseInt(process.env.FUSION_SYNTHESIS_MAX_TOKENS || '15000', 10),
+    expertMaxTokens: parseInt(process.env.FUSION_EXPERT_MAX_TOKENS || '22500', 10),
+    judgeMaxTokens: parseInt(process.env.FUSION_JUDGE_MAX_TOKENS || '16200', 10),
+    synthesisMaxTokens: parseInt(process.env.FUSION_SYNTHESIS_MAX_TOKENS || '45000', 10),
   };
 
   (config as Record<string, unknown>).expertMaxTokens = resetConfig.expertMaxTokens;

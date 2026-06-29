@@ -116,9 +116,9 @@ describe('HTTP routes (in-process inject)', () => {
     expect(res.body).toContain('Free Model Fusion');
     // Spot-check that all major sections are present.
     for (const header of [
-      'Quickstart', 'Chat API', 'Provider API', 'Model API', 'Secrets',
-      'Custom OpenAI-compatible providers', 'Fusion pipeline in depth',
-      'Telegram bot', 'Security', 'Troubleshooting', 'Deploy',
+      'Quickstart', 'Chat API', 'Providers API', 'Models API', 'Secrets',
+      'Custom OpenAI-Compatible Providers', 'Fusion Pipeline',
+      'Telegram Bot', 'Security', 'Troubleshooting', 'Deploy',
     ]) {
       expect(res.body).toContain(header);
     }

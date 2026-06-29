@@ -27,9 +27,9 @@ export function registerSettingsRoutes(fastify: FastifyInstance): void {
       settings: {
         profile: profile || 'balanced',
         webMode: webMode || 'off',
-        expertMaxTokens: expertMaxTokens ? parseInt(expertMaxTokens, 10) : 7500,
-        judgeMaxTokens: judgeMaxTokens ? parseInt(judgeMaxTokens, 10) : 5400,
-        synthesisMaxTokens: synthesisMaxTokens ? parseInt(synthesisMaxTokens, 10) : 15000,
+        expertMaxTokens: expertMaxTokens ? parseInt(expertMaxTokens, 10) : 22500,
+        judgeMaxTokens: judgeMaxTokens ? parseInt(judgeMaxTokens, 10) : 16200,
+        synthesisMaxTokens: synthesisMaxTokens ? parseInt(synthesisMaxTokens, 10) : 45000,
         tavilyKeyConfigured,
       },
     };
