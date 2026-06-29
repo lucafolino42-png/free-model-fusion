@@ -1127,8 +1127,7 @@ async function refreshModels(){
     }
 
     groups.forEach(function(g, provId){
-      // Skip providers without an API key
-      if (!g.provider.hasCredential) { return; }
+
       var prov = g.provider;
       var provModels = g.models;
       var hasKey = prov.hasCredential !== false;
@@ -1138,7 +1137,7 @@ async function refreshModels(){
       h += '<span class="prov-label">' + (hasKey ? '🔑' : '❌') + ' ' + esc(prov.label || prov.id) + ' <code class="key">' + esc(prov.id) + '</code></span>';
       h += '<span class="prov-count">' + modelCount + ' model' + (modelCount !== 1 ? 's' : '') + '</span>';
       if(hasKey){
-        h += '<button class="prov-discover" onclick="event.stopPropagation();discoverModelsForProvider(' + "'" + escapeAttr(provId) + "'" + ', this)">📡 Discover</button>';
+        h += '<span class="prov-discover" role="button" tabindex="0" onclick="event.stopPropagation();discoverModelsForProvider(' + "'" + escapeAttr(provId) + "'" + ', this)">📡 Discover</span>';
       }
       h += '</button><div class="prov-body">';
       if(provModels.length === 0){
@@ -1157,9 +1156,14 @@ async function refreshModels(){
       h += '</div></div>';
     });
     accordion.innerHTML = h;
-    var fb = accordion.querySelector('.prov-body');
-    var fh = accordion.querySelector('.prov-header');
-    if(fb && fh){ fb.classList.add('open'); fh.classList.add('open'); }
+    // Open first group that has models
+    var firstBody = accordion.querySelector('.prov-body');
+    var firstHeader = accordion.querySelector('.prov-header');
+    if(firstBody && firstHeader){
+      // Only auto-open if there are actual model items
+      var itemsCheck = firstBody.querySelector('.model-item');
+      if(itemsCheck){ firstBody.classList.add('open'); firstHeader.classList.add('open'); }
+    }
   } catch(e){
     var acc = document.getElementById('modelsAccordion');
     if(acc) acc.innerHTML = '<div class="prov-group-empty" style="color:var(--red)">Error loading models.</div>';
