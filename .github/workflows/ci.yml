@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: free-model-fusion/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: free-model-fusion
+
+      - name: Type check
+        run: npm run typecheck
+        working-directory: free-model-fusion
+
+      - name: Run tests
+        run: npm test
+        working-directory: free-model-fusion
+        env:
+          NODE_ENV: test
