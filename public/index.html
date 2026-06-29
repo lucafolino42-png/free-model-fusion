@@ -919,7 +919,7 @@ function switchView(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const vw=document.getElementById('view-'+view);
   if(vw)vw.classList.add('active');
-  const titles={chat:'💬 Chat',dashboard:'📊 Dashboard',providers:'🏢 Providers',models:'🤖 Models',env:'🔑 API Keys',settings:'⚙️ Settings',env:'🌐 Environment',memory:'💾 Memory'};
+  const titles={chat:'💬 Chat',dashboard:'📊 Dashboard',providers:'🏢 Providers',models:'🤖 Models',env:'🔐 Secrets',settings:'⚙️ Settings',memory:'💾 Memory'};
   $('viewTitle').textContent=titles[view]||view;
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('open');
