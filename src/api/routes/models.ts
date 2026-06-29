@@ -1,8 +1,10 @@
-import { getAllModels, getAllProviders } from '../../providers/registry.js';
+import { getAllModels, getAllProviders, getModelById } from '../../providers/registry.js';
 import { discoverModels } from '../../providers/modelDiscovery.js';
 import { db } from '../../db/client.js';
 import { customModels } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { callModel } from '../../providers/modelClient.js';
+import { getProviderById } from '../../providers/registry.js';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 
@@ -110,12 +112,82 @@ export function registerModelRoutes(fastify: FastifyInstance): void {
   // POST /discover-models/:providerId — fetches /v1/models from the
   // provider's API and saves each as a custom model.
   f.post('/discover-models/:providerId', async (request, reply) => {
-    const { providerId } = request.params as { providerId: string };
-    const result = await discoverModels(providerId);
-    if (!result.success) {
-      reply.status(400);
+      const { providerId } = request.params as { providerId: string };
+      const result = await discoverModels(providerId);
+      if (!result.success) {
+        reply.status(400);
+        return result;
+      }
       return result;
-    }
-    return result;
-  });
-}
+    });
+
+    // ─── Model Test Endpoint ────────────────────────────────────
+    // POST /models/test — tests a specific model with a prompt
+    // Returns success/failure, latency, provider, raw model ID, response preview
+    f.post('/models/test', {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['modelId', 'prompt'],
+          properties: {
+            modelId: { type: 'string', maxLength: 200 },
+            prompt: { type: 'string', maxLength: 2000 },
+          },
+        },
+      },
+    }, async (request, reply) => {
+      const body = request.body as { modelId: string; prompt: string };
+      const model = await getModelById(body.modelId);
+      if (!model) {
+        reply.status(404);
+        return { error: `Model ${body.modelId} not found` };
+      }
+      if (!model.enabled) {
+        reply.status(400);
+        return { error: `Model ${body.modelId} is disabled` };
+      }
+      if (!model.hasCredential) {
+        reply.status(400);
+        return { error: `No API key configured for model ${body.modelId}` };
+      }
+
+      const provider = await getProviderById(model.providerId);
+      if (!provider || !provider.enabled) {
+        reply.status(400);
+        return { error: `Provider ${model.providerId} not found or disabled` };
+      }
+
+      const startTime = Date.now();
+      try {
+        const result = await callModel(provider, model.model, [
+          { role: 'user', content: body.prompt }
+        ], {
+          maxTokens: 100,
+          temperature: 0,
+          timeout: 15000,
+        });
+
+        const latencyMs = Date.now() - startTime;
+        return {
+          success: true,
+          modelId: body.modelId,
+          provider: model.providerId,
+          rawModelId: model.model,
+          latencyMs,
+          responsePreview: result.content.substring(0, 200),
+          finishReason: result.finishReason,
+        };
+      } catch (error) {
+        const latencyMs = Date.now() - startTime;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          success: false,
+          modelId: body.modelId,
+          provider: model.providerId,
+          rawModelId: model.model,
+          latencyMs,
+          error: errorMessage,
+        };
+      }
+    });
+  }

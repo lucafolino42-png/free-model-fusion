@@ -165,6 +165,20 @@ export interface FusionResult {
     /** Estimated cost in USD (based on model class). */
     estimatedCostUsd?: number;
     /** The reasoning effort used for this request. */
-    reasoningEffort?: string;
-  };
+      reasoningEffort?: string;
+      /** Confidence assessment for this response. */
+      confidence?: {
+        score: number;
+        level: 'very_low' | 'low' | 'medium' | 'high' | 'very_high';
+        reasons: string[];
+        factors: {
+          expertSuccessRate: number;
+          judgeAgreement: number;
+          synthesisQuality: number;
+          webSearchUsed: boolean;
+          providerErrors: number;
+          complexity: string;
+        };
+      };
+    };
 }

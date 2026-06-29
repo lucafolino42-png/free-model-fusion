@@ -25,7 +25,7 @@ function checkSecretKey(): void {
         'on first use. Set it to a random string of at least 32 characters ' +
         '(openssl rand -hex 32).'
     );
-    return;
+    process.exit(1);
   }
 
   if (tooShort && config.isProd) {
@@ -33,7 +33,7 @@ function checkSecretKey(): void {
       `FUSION_SECRET_KEY is only ${key.length} characters; at least 32 are required. ` +
         'Encryption of provider API keys will fail on first use.'
     );
-    return;
+    process.exit(1);
   }
 
   if (!key && config.isDev) {

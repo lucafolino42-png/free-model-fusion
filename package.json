@@ -37,6 +37,7 @@
     "@types/node-telegram-bot-api": "^0.64.0",
     "drizzle-kit": "^0.30.0",
     "prettier": "^3.4.0",
+    "tsc-alias": "^1.8.17",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
@@ -44,11 +45,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/<your-username>/free-model-fusion.git"
+    "url": "https://github.com/lucafolino42-png/free-model-fusion.git"
   },
-  "homepage": "https://github.com/<your-username>/free-model-fusion#readme",
+  "homepage": "https://github.com/lucafolino42-png/free-model-fusion#readme",
   "bugs": {
-    "url": "https://github.com/<your-username>/free-model-fusion/issues"
+    "url": "https://github.com/lucafolino42-png/free-model-fusion/issues"
   },
   "keywords": [
     "ai",

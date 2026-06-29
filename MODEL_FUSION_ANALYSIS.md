@@ -5,17 +5,17 @@
 
 ## Executive Summary
 
-**Free Model Fusion predicts a 7–15% absolute improvement in answer quality over any single free model**, based on published Mixture-of-Agents (MoA) research and the system's architectural advantages:
+**Free Model Fusion is inspired by Mixture-of-Agents (MoA) research** which demonstrates that LLMs can produce higher-quality outputs when given other models' responses as context. However, **actual quality gains depend entirely on your configured providers, models, and settings.**
 
-| Metric | Single Model (best free) | Free Model Fusion | Improvement |
-|--------|-------------------------|-------------------|-------------|
-| **Answer Quality (AlpacaEval)** | ~57.5% (GPT-4o) | **~65.1%** (MoA, published) | **+7.6%** |
-| **MT-Bench Score** | ~9.19 (GPT-4o) | **~9.25** (MoA, published) | **+0.06** |
-| **Factual Accuracy** | 1x baseline | **1.15–1.25x** | **+15–25%** |
-| **Failure Rate** | ~5–15% | **~0.5–2%** | **5–10x reduction** |
-| **Cost per query** | $0.0001–0.005 | **$0.0003–0.02** | **2–4x cost** |
+| Metric | Single Model (best free) | Free Model Fusion (with diverse experts) | Note |
+|--------|-------------------------|------------------------------------------|------|
+| **Answer Quality** | Baseline | **Can improve** with diverse experts | Not guaranteed; config-dependent |
+| **Reliability** | Single point of failure | **Designed for fallback/redundancy** | 5-10x reduction *if* each model has ~90% success |
+| **Cost per query** | $0.0001–0.005 | **$0.0003–0.02** (2-4x more calls) | Free APIs = $0; paid APIs multiply |
 
-**The bottom line:** For 2–4x the cost of a single model call, you get **5–15x better reliability** and **7–15% better quality** — an exceptional ROI. When using only **free providers** (Groq, Gemini, Cerebras), the cost remains **$0.00** while quality rivals paid frontier models.
+**The bottom line:** For 2–4x the cost of a single model call, you get **redundancy through fallback** and **potential quality improvements** — but results vary by configuration. When using only **free providers** (Groq, Gemini, Cerebras), the cost remains **$0.00** while quality *may* rival paid frontier models depending on your setup.
+
+> ⚠️ **This analysis is based on published research (arXiv:2406.04692) and architectural advantages, not universal benchmarks of this specific implementation.** Run `npx tsx scripts/benchmark.ts` to test your own configuration.
 
 ---
 
@@ -109,45 +109,52 @@ This **two-stage refinement** (experts -> judge -> synthesis) produces answers t
 
 ### Overall Quality Improvement
 
-| Layer | Improvement | Source |
-|-------|-------------|--------|
-| Single free model baseline | — | Benchmark |
-| + MoA (open-source models) | **+7-10%** | Published: 65.1% vs 57.5% |
-| + Diverse expert roles | **+3-5%** | Architecture advantage |
-| + Web search + memory | **+2-3%** | Architecture advantage |
-| **Total vs single free model** | **12-18%** | Estimated |
+The MoA research shows **potential** improvements when using diverse models. Actual gains for your setup will vary:
 
-### Benchmark Estimates
+| Layer | Potential Improvement | Source |
+|-------|----------------------|--------|
+| Single free model baseline | — | Your configuration |
+| + MoA (diverse models) | **Variable** | Published: 65.1% vs 57.5% on AlpacaEval |
+| + Diverse expert roles | **Variable** | Architecture advantage |
+| + Web search + memory | **Variable** | Architecture advantage |
 
-| Benchmark | Single Model (best) | Fusion (estimated) | Source |
-|-----------|-------------------|-------------------|--------|
-| **MMLU** | ~86% (Llama 3 70B) | **~90–92%** | Extrapolated from MoA gains |
-| **HumanEval** | ~88% (Llama 3 70B) | **~92–94%** | Diversity improves code |
-| **AlpacaEval 2.0** | ~57.5% (GPT-4o) | **~65–68%** | Published MoA: 65.1% |
-| **MT-Bench** | ~9.19 (GPT-4o) | **~9.25–9.35** | Published MoA: 9.25 |
+> ⚠️ **No universal numbers.** The published 7-10% gain was on specific benchmarks with specific models. Your results depend on which free models you have access to and their quality.
+
+### Benchmark Expectations
+
+| Benchmark | Single Model (typical) | Fusion (potential) | Note |
+|-----------|-----------------------|-------------------|------|
+| **MMLU** | Varies by model | May improve with diversity | Extrapolated from MoA research |
+| **HumanEval** | Varies by model | May improve with diversity | Diversity helps code tasks |
+| **AlpacaEval** | Varies by model | Published MoA: 65.1% | With specific model set |
+| **MT-Bench** | Varies by model | Published MoA: 9.25 | With specific model set |
+
+> **Run your own benchmark:** `npx tsx scripts/benchmark.ts` — the only way to know your actual gains.
 
 ---
 
 ## Cost Analysis
 
-### Per-Query Cost Breakdown
+### Per-Query Cost Breakdown (Estimates Only)
 
-| Component | Models | Estimated Cost |
-|-----------|--------|---------------|
-| **Expert Panel** | 4 models | $0.0008–0.004 |
-| **Judge** | 1 model | $0.0001–0.001 |
-| **Synthesis** | 1 model | $0.0002–0.005 |
-| **Total** | 6 calls | **$0.002–0.02** |
+| Component | Models | Estimated Cost (varies by provider) |
+|-----------|--------|-------------------------------------|
+| **Expert Panel** | Up to 4 models | $0.00 (free tiers) – $0.004 |
+| **Judge** | 1 model | $0.00 – $0.001 |
+| **Synthesis** | 1 model | $0.00 – $0.005 |
+| **Total** | Up to 6 calls | **$0.00 – $0.02** |
 
-### Value-for-Money
+> ⚠️ **Cost estimates are rough class-based approximations.** Actual costs depend on your specific providers, models, token usage, and whether you're on free/paid tiers. Provider pricing changes frequently.
 
-| Metric | Single cheap model | Fusion (cheap) | Fusion (mixed) |
-|--------|-------------------|----------------|----------------|
-| **Cost** | $0.0001 | $0.0008 | $0.005 |
-| **Quality** | 60/100 | **85/100** | **95/100** |
-| **Quality vs GPT-4o** | 60% | **~90%** | **~98%** |
+### Value-for-Money (Illustrative)
 
-> **Key insight:** Fusion with free/cheap models achieves ~90% of GPT-4o quality at **$0.00–0.0008/query**.
+| Metric | Single cheap model | Fusion (cheap/free) | Fusion (mixed paid) |
+|--------|-------------------|---------------------|--------------------|
+| **Cost** | $0.0001 | $0.00 – $0.0008 | $0.002 – $0.005 |
+| **Quality** | Varies | May improve with diversity | May approach frontier |
+| **Quality vs GPT-4o** | Varies | Varies | Varies |
+
+> **Key insight:** Free Model Fusion lets you use multiple free tiers together. Quality depends on which free models you have access to.
 
 ---
 
@@ -157,18 +164,28 @@ This **two-stage refinement** (experts -> judge -> synthesis) produces answers t
 
 ```mermaid
 flowchart TB
-    Q[Query] --> P[Panel: 4 experts called]
+    Q[Query] --> P[Panel: up to 4 experts called]
     P -->|3 succeed| J1[Judge evaluates 3 -> Excellent]
     P -->|2 succeed| J2[Judge evaluates 2 -> Good]
     P -->|1 succeeds| J3[Fallback: best expert -> Adequate]
     P -->|0 succeed| J4[Error: all failed]
 ```
 
-Assuming each free model has **90% success rate**:
-- **Single model:** 90% success, 10% failure
-- **Fusion (4 models, need >=1):** 99.99% success
+**Theoretical reliability improvement** (assuming independent failures):
 
-**Fusion is ~1,000x more reliable** than a single model.
+| Scenario | Assumed Per-Model Success | Fusion Success (need ≥1) | Improvement |
+|----------|--------------------------|--------------------------|-------------|
+| Optimistic | 90% | 99.99% | ~1,000x |
+| Realistic (free tiers) | 70-85% | 95-99.7% | 6-60x |
+| Pessimistic | 50% | 93.75% | 15x |
+
+> ⚠️ **These are theoretical calculations.** Real-world reliability depends on:
+> - Provider uptime (correlated failures reduce gains)
+> - Rate limits (burst failures)
+> - Model quality (bad models ≠ failed calls)
+> - Network issues
+
+**Free Model Fusion is designed for fallback/redundancy, not guaranteed reliability.**
 
 ---
 
@@ -177,20 +194,21 @@ Assuming each free model has **90% success rate**:
 ### When Single Models Might Be Better
 
 1. **Ultra-simple queries** — Fusion overhead isn't justified
-2. **Real-time chat** (sub-1s latency) — Fusion adds 1-3s
+2. **Real-time chat** (sub-1s latency) — Fusion adds 1-3s typically
 3. **Very high throughput** (1000+ QPS) — Cost multiplies
 4. **Homogeneous expert set** — If all experts are the same model, diversity drops
+5. **Strict cost control** — Fusion makes 3-6x more API calls
 
-### Diminishing Returns
+### Diminishing Returns (Research-Based)
 
-Quality gains diminish beyond 4 experts:
-- 1 expert: **Baseline** (70)
-- 2 experts: **+10%** (77)
-- 3 experts: **+5%** (81)
-- 4 experts: **+3%** (83)
-- 5+ experts: **+1-2% each** (84-85)
+Quality gains from MoA research diminish beyond 4 experts:
+- 1 expert: **Baseline**
+- 2 experts: **Largest gain**
+- 3 experts: **Moderate gain**
+- 4 experts: **Smaller gain**
+- 5+ experts: **Marginal gains**
 
-**Free Model Fusion defaults to 4 experts** — the sweet spot.
+**Free Model Fusion defaults to 4 experts** — the sweet spot per research.
 
 ---
 
@@ -198,22 +216,23 @@ Quality gains diminish beyond 4 experts:
 
 ```mermaid
 graph TD
-    Quality["+12-18% quality"]
-    Reliability["5-10x fewer failures"]
-    Cost["$0 with free APIs"]
-    Quality --> Verdict["Exceptional ROI"]
+    Quality["Potential quality improvement (config-dependent)"]
+    Reliability["Designed for fallback/redundancy"]
+    Cost["$0 with free APIs; paid APIs multiply cost"]
+    Quality --> Verdict["Worth trying for your use case"]
     Reliability --> Verdict
     Cost --> Verdict
 ```
 
-**Free Model Fusion consistently outperforms any single free model** with:
-- **12–18% better overall quality** 📈
-- **5–10x lower failure rate** 🛡️
-- **Near-frontier model quality at $0 cost** 💸
-- **Built-in web search for real-time accuracy** 🌐
+**Free Model Fusion provides:**
+- **Redundancy** through multiple provider fallback 🛡️
+- **Potential quality gains** from diverse expert perspectives 📈
+- **$0 cost** when using only free provider tiers 💸
+- **Built-in web search** for real-time accuracy 🌐
+- **Self-hosted control** — your keys, your data 🔐
 
-> **Try it yourself:** Add your free API keys and compare — send the same question with /speed and /quality profiles.
+> **Try it yourself:** Add your free API keys and compare — send the same question with `/speed` and `/quality` profiles. Run `npx tsx scripts/benchmark.ts` to measure your actual results.
 
 ---
 
-*Analysis generated from Free Model Fusion source code analysis + published Mixture-of-Agents research (arXiv:2406.04692). Estimates are conservative.*
+*Analysis based on Free Model Fusion source code + published Mixture-of-Agents research (arXiv:2406.04692). All gains are config-dependent — run your own benchmarks.*

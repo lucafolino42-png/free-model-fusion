@@ -1,7 +1,16 @@
+// ─── Provider Model Client ────────────────────────────────
+// Handles calls to provider APIs with retry, timeout, and cooldown logic.
+
 import { getCredential } from './credentials.js';
 import { logger } from '../utils/logger.js';
 import { ProviderError } from '../utils/errors.js';
 import { sanitizeErrorMessage } from '../utils/validateUrl.js';
+import {
+  recordProviderSuccess,
+  recordProviderFailure,
+  isProviderCoolingDown,
+  classifyProviderError,
+} from './cooldown.js';
 import type { RegisteredProvider } from './types.js';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -135,6 +144,16 @@ export async function callModel(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    // Check cooldown before making the call
+    const { coolingDown, remainingMs } = isProviderCoolingDown(provider.id);
+    if (coolingDown) {
+      throw new ProviderError(
+        `Provider ${provider.label} is cooling down (${Math.ceil(remainingMs / 1000)}s remaining)`,
+        provider.id,
+        429 // Use 429 for rate limit/cooldown
+      );
+    }
+
     const response = await fetch(provider.endpoint, {
       method: 'POST',
       headers: {
@@ -160,6 +179,12 @@ export async function callModel(
       // Sanitize error messages to prevent API key leakage
       const sanitizedError = sanitizeErrorMessage(parsedError);
 
+      // Classify error for cooldown tracking
+      const { isTransient, isRateLimit } = classifyProviderError(sanitizedError);
+      if (isTransient) {
+        recordProviderFailure(provider.id, isRateLimit);
+      }
+
       throw new ProviderError(
         `Provider ${provider.label} returned ${response.status}: ${sanitizedError}`,
         provider.id,
@@ -174,11 +199,16 @@ export async function callModel(
       logger.warn(`Could not extract content from ${modelId} response`, {
         responseKeys: isObject(data) ? Object.keys(data) : [],
       });
+      // Treat parsing failure as transient
+      recordProviderFailure(provider.id, false);
       throw new ProviderError(
         `Could not parse response from ${provider.label} model ${modelId}`,
         provider.id
       );
     }
+
+    // Success! Record it
+    recordProviderSuccess(provider.id);
 
     const finishReason = extractFinishReason(data);
     const model = (isObject(data) && isString(data.model) ? data.model : null) || modelId;
@@ -193,6 +223,13 @@ export async function callModel(
     // Sanitize error messages for network/abort errors
     const errorMsg = error instanceof Error ? error.message : String(error);
     const sanitized = sanitizeErrorMessage(errorMsg);
+
+    // Classify and record failure for cooldown tracking
+    const { isTransient, isRateLimit } = classifyProviderError(sanitized);
+    if (isTransient) {
+      recordProviderFailure(provider.id, isRateLimit);
+    }
+
     throw new ProviderError(
       `Request to ${provider.label} (${modelId}) failed: ${sanitized}`,
       provider.id

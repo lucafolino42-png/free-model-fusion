@@ -10,6 +10,7 @@ import { runSynthesis } from './synthesis.js';
 import { continueResponse, isTruncated } from './continuation.js';
 import { estimateCallCost, estimateTotalCost } from './costEstimate.js';
 import { listSkills, findSkill, getActiveSkill, loadSkill, unloadSkill } from './skills.js';
+import { computeConfidence, estimateSynthesisQuality } from './confidence.js';
 import { getAllProviders, getAllModels, getProviderById, getModelById, findProviderByAlias } from '../providers/registry.js';
 import { saveCredential, deleteCredential, listCredentials, hasCredential } from '../providers/credentials.js';
 import { addCustomProvider, deleteCustomProvider, setProviderEnabled } from '../providers/registry.js';
@@ -413,24 +414,47 @@ async function handleChatMessage(
   }
 
   // Handle truncation
-  let finalContent = synthesisResult.content;
-  let continued = false;
-  let truncated = false;
+    let finalContent = synthesisResult.content;
+    let continued = false;
+    let truncated = false;
 
-  if (synthesisResult.finishReason && isTruncated(synthesisResult.finishReason)) {
-    truncated = true;
-    const continuationResult = await continueResponse(
-      synthesisResult.content,
-      routing.synthesis || routing.experts[0],
-      synthesisResult.finishReason,
-      reasoningEffort
+    if (synthesisResult.finishReason && isTruncated(synthesisResult.finishReason)) {
+      truncated = true;
+      const continuationResult = await continueResponse(
+        synthesisResult.content,
+        routing.synthesis || routing.experts[0],
+        synthesisResult.finishReason,
+        reasoningEffort
+      );
+      finalContent = continuationResult.fullContent;
+      continued = continuationResult.continued;
+    }
+
+    // ── Confidence Scoring ──────────────────────────────────────
+    // Compute confidence based on expert success rate, judge agreement,
+    // synthesis quality, web search, and provider errors
+    const synthesisQuality = estimateSynthesisQuality(
+      finalContent,
+      expertResult.responses,
+      routing.synthesis || routing.experts[0]
     );
-    finalContent = continuationResult.fullContent;
-    continued = continuationResult.continued;
-  }
 
-  const totalExperts = routing.experts.length;
-  const totalCalls = (judgeUsed ? 1 : 0) + 1 + (continued ? 1 : 0);
+    const confidence = computeConfidence(
+      {
+        expertSuccessRate: routing.experts.length > 0 ? expertResult.responses.length / routing.experts.length : 0,
+        judgeAgreement: judgeResult.scores ? 1 : 0,
+        synthesisQuality,
+        webSearchUsed: webSearched,
+        providerErrors: expertResult.errors.length,
+        complexity: analyzeQueryComplexity(effectiveMessage) || 'balanced',
+      },
+      expertResult.responses.length,
+      routing.experts.length,
+      judgeResult.scores
+    );
+
+    const totalExperts = routing.experts.length;
+    const totalCalls = (judgeUsed ? 1 : 0) + 1 + (continued ? 1 : 0);
 
   // ── Cost estimate ───────────────────────────────────────
   // Rough per-call cost based on model speed/quality class.
@@ -469,52 +493,58 @@ async function handleChatMessage(
   });
 
   // Build meta
-  const result: FusionResult = {
-    answer: finalContent,
-    telegramHtml,
-    meta: {
-      routing: {
-        profile,
-        expertsUsed: expertResult.responses.length,
-        judgeUsed,
-        synthesisUsed: true,
-        continued,
-        truncated,
+    const result: FusionResult = {
+      answer: finalContent,
+      telegramHtml,
+      meta: {
+        routing: {
+          profile,
+          expertsUsed: expertResult.responses.length,
+          judgeUsed,
+          synthesisUsed: true,
+          continued,
+          truncated,
+        },
+        models: {
+          experts: routing.experts.map((m) => m.id),
+          judge: routing.judge?.id,
+          synthesis: (routing.synthesis || routing.experts[0]).id,
+        },
+        web: {
+          enabled: shouldSearch,
+          searched: webSearched,
+          resultsCount: webContext ? webContext.split('\n').length : 0,
+          warning: webWarning,
+        },
+        memory: {
+          sessionId,
+          messagesLoaded: history.length,
+          messagesSaved: true,
+        },
+        tokens: {
+          expert: config.expertMaxTokens,
+          judge: config.judgeMaxTokens,
+          synthesis: config.synthesisMaxTokens,
+          continuation: config.continuationMaxTokens,
+          totalEstimated:
+            config.expertMaxTokens * totalExperts +
+            config.judgeMaxTokens * (judgeUsed ? 1 : 0) +
+            config.synthesisMaxTokens +
+            config.continuationMaxTokens * (continued ? 1 : 0),
+        },
+        errors: responseErrors.length > 0 ? responseErrors : undefined,
+        judgeScores: judgeResult.scores,
+        racedAhead: typeof expertResult.racedAhead === 'number' ? expertResult.racedAhead : 0,
+        estimatedCostUsd,
+        reasoningEffort,
+        confidence: {
+          score: confidence.score,
+          level: confidence.level,
+          reasons: confidence.reasons,
+          factors: confidence.factors,
+        },
       },
-      models: {
-        experts: routing.experts.map((m) => m.id),
-        judge: routing.judge?.id,
-        synthesis: (routing.synthesis || routing.experts[0]).id,
-      },
-      web: {
-        enabled: shouldSearch,
-        searched: webSearched,
-        resultsCount: webContext ? webContext.split('\n').length : 0,
-        warning: webWarning,
-      },
-      memory: {
-        sessionId,
-        messagesLoaded: history.length,
-        messagesSaved: true,
-      },
-      tokens: {
-        expert: config.expertMaxTokens,
-        judge: config.judgeMaxTokens,
-        synthesis: config.synthesisMaxTokens,
-        continuation: config.continuationMaxTokens,
-        totalEstimated:
-          config.expertMaxTokens * totalExperts +
-          config.judgeMaxTokens * (judgeUsed ? 1 : 0) +
-          config.synthesisMaxTokens +
-          config.continuationMaxTokens * (continued ? 1 : 0),
-      },
-      errors: responseErrors.length > 0 ? responseErrors : undefined,
-      judgeScores: judgeResult.scores,
-      racedAhead: typeof expertResult.racedAhead === 'number' ? expertResult.racedAhead : 0,
-      estimatedCostUsd,
-      reasoningEffort,
-    },
-  };
+    };
 
   // Save assistant message
   await saveMessage(sessionId, 'assistant', finalContent, {

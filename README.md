@@ -28,6 +28,18 @@ PRs welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, conventions, an
 
 Auth/authz is intentionally absent — this is a self-hosted tool meant for trusted networks. Put it behind a reverse proxy (Caddy / nginx / Cloudflare Tunnel) if exposing it. Found a vulnerability? Open an issue with the `security` label.
 
+## Router vs Model Fusion
+
+Free Model Fusion can be used in two ways:
+
+### 1. Model Router
+Use one local/self-hosted interface in front of many AI providers. Route by speed, quality, availability, and fallback behavior.
+
+### 2. Model Fusion
+For harder prompts, call multiple expert models in parallel, evaluate their answers with a judge model, and synthesize the strongest parts into one final response.
+
+This does not guarantee better answers. Quality depends on the providers, models, prompts, and settings you configure.
+
 ## Why?
 
 If you're collecting free API keys from AI providers, you know the pain:
@@ -52,7 +64,7 @@ Free Model Fusion solves this with a clean, single-file runtime. No n8n, no comp
 - 🎯 **Reasoning Effort** — Control model thinking depth (low/medium/high/xhigh)
 - 🤖 **Telegram Bot** — Full Telegram support with webhook and polling modes
 - 🌐 **Web UI Dashboard** — Full SPA with chat, providers, models, keys, settings, and setup wizard
-- 🔗 **OpenAI-Compatible API** — Connect any OpenAI SDK client via `/v1/chat/completions` with streaming + tools
+- 🔗 **OpenAI-Compatible API** — Connect any OpenAI SDK client via `/v1/chat/completions` with **chunked streaming** + tool parsing
 - 🔐 **Encrypted Credentials** — API keys stored encrypted in the database
 - 🧩 **Custom Providers** — Add any OpenAI-compatible API endpoint
 - 🚀 **Setup Wizard** — Step-by-step guided onboarding for new users
@@ -63,18 +75,22 @@ Free Model Fusion solves this with a clean, single-file runtime. No n8n, no comp
 
 > **How much better is multi-model fusion compared to a single AI model?**
 
-Free Model Fusion uses a **Mixture-of-Agents (MoA)** approach — calling multiple AI models in parallel, evaluating their responses with a judge model, and synthesizing a refined final answer. Published research ([arXiv:2406.04692](https://arxiv.org/abs/2406.04692)) shows this method achieves **7–15% higher quality** than any single model alone, with **5–10× better reliability** through automatic fallback when individual models fail.
+Free Model Fusion uses a **Mixture-of-Agents (MoA)** approach — calling multiple AI models in parallel, evaluating their responses with a judge model, and synthesizing a refined final answer. Published research ([arXiv:2406.04692](https://arxiv.org/abs/2406.04692)) demonstrates this method **can improve quality** over single models depending on the configured models and prompts, with **improved robustness through automatic fallback** when individual models fail.
 
-📊 **See the full analysis:** [`MODEL_FUSION_ANALYSIS.md`](MODEL_FUSION_ANALYSIS.md) — includes architecture diagrams, benchmark predictions, cost analysis, and real-world scenario comparisons.
+> ⚠️ **Important:** Actual quality depends entirely on the providers, models, and settings you configure. The benchmark runner (`npx tsx scripts/benchmark.ts`) lets you test your own setup — do not treat published research numbers as guarantees for your configuration.
 
-🧪 **Run your own benchmark:** `npx tsx scripts/benchmark.ts` — compares single-model vs fusion responses across 10 questions and generates a markdown report.
+📊 **See the full analysis:** [`MODEL_FUSION_ANALYSIS.md`](MODEL_FUSION_ANALYSIS.md) — includes architecture diagrams, cost analysis, and real-world scenario comparisons.
 
-| Metric | Single Model | Fusion |
-|--------|-------------|--------|
-| **Quality** | 60–70% | **85–95%** |
-| **Reliability** | ~90% | **99.99%** |
-| **Cost (free APIs)** | $0.00 | **$0.00** |
-| **Cost (paid APIs)** | $0.0001–0.005 | **$0.002–0.02** |
+🧪 **Run your own benchmark:** `npx tsx scripts/benchmark.ts` — compares single-model vs fusion responses across 10 questions and generates a markdown report. Results are local/config-dependent and not universal proof.
+
+| Metric | Single Model | Fusion (Typical) |
+|--------|-------------|------------------|
+| **Quality** | Varies by model | Can improve with diverse experts |
+| **Reliability** | Single point of failure | Designed for fallback/redundancy |
+| **Cost (free APIs)** | $0.00 | $0.00 |
+| **Cost (paid APIs)** | $0.0001–0.005 | $0.002–0.02 (2-4x more calls) |
+
+> **Note:** Fusion makes multiple API calls per query. With free tiers this stays $0, but paid APIs multiply costs. Provider free tiers and limits change over time.
 
 ---
 
@@ -90,6 +106,7 @@ cd free-model-fusion
 # Copy env and edit
 cp .env.example .env
 # At minimum, set FUSION_SECRET_KEY
+# Optional: Add GROQ_API_KEY for free fast models (note: free tier has strict 6000 TPM limit)
 
 # Start
 docker compose up -d
@@ -97,6 +114,8 @@ docker compose up -d
 # Check health
 curl http://localhost:3000/health
 ```
+
+> ⚠️ **Groq Free Tier Note:** The default expert token limit is 2000 to work within Groq's free tier (6000 TPM for Llama 3.1 8B). If you only have Groq keys, consider adding more providers (Gemini, Cerebras, OpenRouter free models) for better reliability. You can increase `FUSION_EXPERT_MAX_TOKENS` if you have a paid Groq plan.
 
 ### Without Docker
 
@@ -117,7 +136,7 @@ npm run dev
 
 ## Usage
 
-### API
+### API (Native `/chat` endpoint)
 
 ```bash
 curl -X POST http://localhost:3000/chat \
@@ -143,6 +162,35 @@ Response:
   }
 }
 ```
+
+### OpenAI-Compatible API (`/v1/chat/completions`)
+
+```bash
+# Non-streaming
+curl -X POST http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "fusion-balanced",
+    "messages": [
+      { "role": "user", "content": "Explain Cloudflare Tunnel" }
+    ]
+  }'
+```
+
+```bash
+# Streaming (chunked - generates full response then streams as chunks)
+curl -X POST http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "fusion-quality",
+    "messages": [
+      { "role": "user", "content": "Write a haiku about Docker" }
+    ],
+    "stream": true
+  }'
+```
+
+> **Note:** Streaming is **chunked compatibility streaming** — the full response is generated first, then sent as SSE chunks. This is not true token-by-token streaming.
 
 ### Speed vs Quality
 
@@ -212,12 +260,31 @@ Free Model Fusion supports any OpenAI-compatible API endpoint:
 | `GEMINI_API_KEY` | — | Google Gemini API key |
 | `CEREBRAS_API_KEY` | — | Cerebras API key |
 | `NVIDIA_NIM_API_KEY` | — | NVIDIA NIM API key |
+| `TOGETHER_API_KEY` | — | Together AI API key |
+| `FIREWORKS_API_KEY` | — | Fireworks AI API key |
+| `DEEPINFRA_API_KEY` | — | DeepInfra API key |
+| `NOVITA_API_KEY` | — | Novita AI API key |
+| `HYPERBOLIC_API_KEY` | — | Hyperbolic API key |
+| `SAMBANOVA_API_KEY` | — | SambaNova API key |
+| `PERPLEXITY_API_KEY` | — | Perplexity API key |
+| `NEBIUS_API_KEY` | — | Nebius API key |
+| `REPLICATE_API_KEY` | — | Replicate API key |
+| `LAMBDA_API_KEY` | — | Lambda Labs API key |
+| `CUSTOM_OPENAI_API_KEY` | — | Custom OpenAI-compatible provider API key |
 | `FUSION_DEFAULT_PROFILE` | `balanced` | `speed`, `balanced`, `quality`, or `custom` |
 | `FUSION_MAX_EXPERTS` | `4` | Maximum expert models to call |
+| `FUSION_MAX_EXPERTS_PER_PROVIDER` | `2` | Max experts per provider |
 | `FUSION_EXPERT_MAX_TOKENS` | `22500` | Max tokens per expert response |
 | `FUSION_JUDGE_MAX_TOKENS` | `16200` | Max tokens for judge evaluation |
 | `FUSION_SYNTHESIS_MAX_TOKENS` | `45000` | Max tokens for synthesis |
+| `FUSION_CONTINUATION_MAX_TOKENS` | `22500` | Max tokens for continuation |
+| `FUSION_ENABLE_CONTINUATION` | `true` | Enable continuation on truncation |
+| `FUSION_MAX_CONTINUATIONS` | `1` | Max continuation attempts |
 | `FUSION_HISTORY_MESSAGES` | `12` | Max history messages to load |
+| `FUSION_HISTORY_CHARS` | `12000` | Max history characters |
+| `FUSION_WEB_MAX_RESULTS` | `5` | Max web search results |
+| `FUSION_WEB_CONTEXT_CHARS` | `8000` | Max web search context chars |
+| `TELEGRAM_CHUNK_SIZE` | `3600` | Telegram message chunk size |
 
 See [.env.example](.env.example) for the complete list.
 
@@ -225,24 +292,26 @@ See [.env.example](.env.example) for the complete list.
 
 Free Model Fusion comes pre-configured with presets for:
 
-| Provider | Speed | Quality | Free Tier |
-|----------|-------|---------|-----------|
-| Groq | ⚡ very_fast | Good | ✅ Free |
-| Cerebras | ⚡ very_fast | Good | ✅ Free |
-| Gemini | ⚡ fast | Strong | ✅ Free |
-| OpenRouter | ⚡ fast | Frontier | ✅ Free models |
-| SambaNova | ⚡ fast | Good | ✅ Free |
-| Together | ⚡ fast | Strong | 💲 Pay-as-you-go |
-| Fireworks | ⚡ fast | Strong | 💲 Pay-as-you-go |
-| DeepInfra | ⚡ fast | Good | 💲 Pay-as-you-go |
-| Novita | ⚡ fast | Good | 💲 Cheap |
-| Hyperbolic | 🐢 medium | Good | 💲 Pay-as-you-go |
-| Perplexity | 🐢 medium | Strong | 💲 Pay-as-you-go |
-| Nebius | 🐢 medium | Strong | 💲 Pay-as-you-go |
-| Replicate | 🐢 medium | Good | 💲 Pay-as-you-go |
-| Lambda Labs | 🐢 medium | Strong | 💲 Pay-as-you-go |
-| NVIDIA NIM | 🐢 slow | Frontier | 💲 Pay-as-you-go |
-| Custom | Configurable | Configurable | You choose |
+| Provider | Speed | Quality | Free Tier? | Notes |
+|----------|-------|---------|------------|-------|
+| Groq | ⚡ very_fast | Good | ✅ Yes* | Free tier has strict rate limits (TPM) |
+| Cerebras | ⚡ very_fast | Good | ✅ Yes* | Free tier available |
+| Gemini | ⚡ fast | Strong | ✅ Yes* | Free tier with daily limits |
+| OpenRouter | ⚡ fast | Frontier | ✅ Free models | Access to many free models |
+| SambaNova | ⚡ fast | Good | ✅ Yes* | Free tier available |
+| Together | ⚡ fast | Strong | 💲 Pay-as-you-go | No free tier |
+| Fireworks | ⚡ fast | Strong | 💲 Pay-as-you-go | No free tier |
+| DeepInfra | ⚡ fast | Good | 💲 Pay-as-you-go | No free tier |
+| Novita | ⚡ fast | Good | 💲 Cheap | No free tier |
+| Hyperbolic | 🐢 medium | Good | 💲 Pay-as-you-go | No free tier |
+| Perplexity | 🐢 medium | Strong | 💲 Pay-as-you-go | No free tier |
+| Nebius | 🐢 medium | Strong | 💲 Pay-as-you-go | No free tier |
+| Replicate | 🐢 medium | Good | 💲 Pay-as-you-go | No free tier |
+| Lambda Labs | 🐢 medium | Strong | 💲 Pay-as-you-go | No free tier |
+| NVIDIA NIM | 🐢 slow | Frontier | 💲 Pay-as-you-go | No free tier |
+| Custom | Configurable | Configurable | You choose | Any OpenAI-compatible endpoint |
+
+> ⚠️ **Free tiers marked with * may have strict rate limits, daily quotas, or require account verification.** Provider free tiers and limits change over time — always check the provider's current pricing page.
 
 ### NVIDIA NIM Example
 
@@ -427,10 +496,11 @@ docker compose up -d
 
 ### PostgreSQL
 
-By default, Free Model Fusion uses SQLite (zero setup). For PostgreSQL:
+By default, Free Model Fusion uses SQLite (zero setup). **PostgreSQL support is planned but not yet implemented** — the code currently only supports libSQL/SQLite via `@libsql/client`.
 
+For PostgreSQL (when implemented):
 1. Set `DATABASE_URL` to your PostgreSQL connection string
-2. Install the `@libsql/client` with PostgreSQL support or switch to Drizzle's PostgreSQL driver
+2. Use Drizzle's PostgreSQL driver instead of `@libsql/client`
 
 ## Roadmap
 
@@ -447,10 +517,11 @@ By default, Free Model Fusion uses SQLite (zero setup). For PostgreSQL:
 
 ## Limitations
 
-- **No token-by-token streaming yet** — Responses are generated in full, then streamed as chunks via `/v1/chat/completions`
+- **Chunked streaming, not token-by-token** — Responses are generated in full, then streamed as chunks via `/v1/chat/completions` (compatible with OpenAI clients but not true token streaming)
+- **Tool calling is prompt-injected + JSON parsing** — Not native provider-level tool calling; tool definitions are injected into the prompt and model output is parsed for JSON tool calls
 - **Model IDs change** — Provider model IDs may change; use 📡 Discover in the Models view to re-fetch
 - **Rate limits** — Each free provider has its own rate limits
-- **SQLite default** — SQLite works great for single-user; use PostgreSQL for multi-user
+- **SQLite default** — SQLite works great for single-user; PostgreSQL support is planned for multi-user
 
 ## Development
 
